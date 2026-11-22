@@ -115,7 +115,11 @@ select{padding-right:30px;background-position:right 12px center}
 <div class="modal-back hidden" id="importModal"><div class="modal"><div class="modal-head"><h3>Importa la cronologia Netflix</h3><button class="x" data-close="importModal">×</button></div><p style="color:var(--muted);font-size:13px">CineTrack raggruppa gli episodi sotto una sola serie. Non importa mai le singole puntate come schede separate. I titoli ambigui vengono lasciati da verificare.</p><div class="import-box"><b>Seleziona il file CSV di Netflix</b><br><input type="file" id="csvFile" accept=".csv,text/csv"><div style="margin:12px auto 0;max-width:280px;text-align:left"><label for="importOwner" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">A chi appartiene questa cronologia?</label><select id="importOwner" style="width:100%"><option value="">Seleziona Umb o Lu…</option><option value="Umb">Umb</option><option value="Lu">Lu</option></select></div><br><button class="btn" id="analyzeNetflix" style="margin-top:12px" disabled>Analizza cronologia</button></div><div id="importResult" class="notice"></div><div id="importPreview" class="hidden" style="margin-top:14px"></div><div class="modal-actions"><button class="btn" data-close="importModal">Chiudi</button><button class="btn primary" id="confirmImport" disabled>Importa contenuti riconosciuti</button></div></div></div>
 
 <div id="ctAuthGate" style="position:fixed;inset:0;z-index:99999;background:#101820;color:#f4f7f8;display:flex;align-items:center;justify-content:center;padding:22px;font-family:inherit">
-  <div style="width:min(440px,100%);background:#192832;border:1px solid #344954;border-radius:18px;padding:24px;box-shadow:0 18px 60px #0008">
+  <div id="ctAuthLoading" style="width:min(440px,100%);background:#192832;border:1px solid #344954;border-radius:18px;padding:28px 24px;box-shadow:0 18px 60px #0008;text-align:center">
+    <div style="font-size:22px;font-weight:800;margin-bottom:8px">CineTrack</div>
+    <div style="color:#b8c8ce;font-size:14px">Caricamento libreria…</div>
+  </div>
+  <div id="ctAuthPanel" style="display:none;width:min(440px,100%);background:#192832;border:1px solid #344954;border-radius:18px;padding:24px;box-shadow:0 18px 60px #0008">
     <div style="font-size:25px;font-weight:800;margin-bottom:6px">CineTrack condiviso</div>
     <div style="color:#b8c8ce;font-size:14px;line-height:1.5;margin-bottom:18px">Accedi per usare la libreria comune Umb / Lu. Non serve un indirizzo email.</div>
 
@@ -249,6 +253,8 @@ async function ctFinishAuth(){
   const result=await ctCallAccess({action:'get-member'});
   const data=result&&result.member;
   if(!data){
+   document.getElementById('ctAuthLoading').style.display='none';
+   document.getElementById('ctAuthPanel').style.display='block';
    document.getElementById('ctIdentity').style.display='block';
    document.getElementById('ctAuthGate').style.display='flex';
    document.getElementById('ctMakeInvite').style.display='none';
@@ -395,7 +401,16 @@ async function ctBoot(){
   ctClient=window.supabase.createClient(CINETRACK_CONFIG.url,CINETRACK_CONFIG.publishableKey);
   const {data:{session}}=await ctClient.auth.getSession();
   if(session){ctUser=session.user;await ctFinishAuth()}
- }catch(e){console.error(e);status.textContent='Errore di avvio: '+e.message}
+  else {
+   document.getElementById('ctAuthLoading').style.display='none';
+   document.getElementById('ctAuthPanel').style.display='block';
+  }
+ }catch(e){
+  console.error(e);
+  document.getElementById('ctAuthLoading').style.display='none';
+  document.getElementById('ctAuthPanel').style.display='block';
+  status.textContent='Errore di avvio: '+e.message;
+ }
 }
 document.getElementById('ctStart').onclick=async()=>{
  const status=document.getElementById('ctAuthStatus');status.textContent='Connessione…';
