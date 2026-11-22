@@ -396,6 +396,8 @@ async function ctBoot(){
  const status=document.getElementById('ctAuthStatus');
  try{
   if(!window.supabase||!window.CINETRACK_CONFIG||!CINETRACK_CONFIG.url||!CINETRACK_CONFIG.publishableKey||CINETRACK_CONFIG.url.includes('INSERISCI')){
+   document.getElementById('ctAuthLoading').style.display='none';
+   document.getElementById('ctAuthPanel').style.display='block';
    status.textContent='Configurazione Supabase mancante: completa supabase-config.js prima della pubblicazione.';return;
   }
   ctClient=window.supabase.createClient(CINETRACK_CONFIG.url,CINETRACK_CONFIG.publishableKey);
