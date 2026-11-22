@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cinetrack-shell-v5';
+const CACHE_NAME = 'cinetrack-shell-v6';
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './supabase-config.js', './icons/icon-192.png', './icons/icon-512.png', './icons/icon.svg', './icons/cinetrack-orizzontale.svg', './icons/reaction-dislike.svg', './icons/reaction-like.svg', './icons/reaction-superlike.svg', './icons/setting.svg', './icons/plus.svg'];
 
 self.addEventListener('install', event => {
