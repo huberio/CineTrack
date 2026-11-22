@@ -1,0 +1,10 @@
+CineTrack Realtime - build tecnica preliminare
+
+1) Configura supabase-config.js con Project URL e Publishable key (mai la Secret key).
+2) Esegui supabase/migrations/002_hardening.sql nel SQL Editor.
+3) Distribuisci la Edge Function supabase/functions/cinetrack-access/index.ts tramite Supabase CLI.
+4) Configura i secrets server-side: CINETRACK_BOOTSTRAP_SECRET (random lungo) e CINETRACK_ALLOWED_ORIGIN=https://huberio.github.io.
+   La funzione richiede inoltre SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY nell'ambiente Edge Function.
+5) Pubblica tutti i file della cartella root sul repository GitHub Pages.
+
+ATTENZIONE: questa build è un'integrazione iniziale, non ancora verificata end-to-end con il tuo progetto Supabase. Prima dell'uso reale occorre testare bootstrap, invito, sincronizzazione concorrente e riconnessione. Non cancellare la vecchia versione finché i test non sono superati.

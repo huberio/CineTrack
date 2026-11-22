@@ -36,18 +36,41 @@
 <div class="modal-back hidden" id="detailModal"><div class="modal"><div class="modal-head"><h3>Dettaglio contenuto</h3><button class="x" data-close="detailModal">×</button></div><div id="detailBody"></div><div class="modal-actions"><button class="btn" id="detailEdit">Modifica</button><div class="right-actions"><button class="btn primary" data-close="detailModal">Applica</button></div></div></div></div>
 <div class="modal-back hidden" id="tmdbModal"><div class="modal"><div class="modal-head"><h3>Collega The Movie Database</h3><button class="x" data-close="tmdbModal">×</button></div><p style="color:var(--muted);font-size:13px">Per cercare titoli in italiano e recuperare automaticamente locandine, informazioni e stagioni, CineTrack usa TMDB. Crea una API Key gratuita sul sito di TMDB e incollala qui. La chiave resta salvata solo in questo browser.</p><div class="field"><label for="tmdbKey">TMDB API Key (v3 auth)</label><input id="tmdbKey" type="password" placeholder="Incolla qui la tua API Key"></div><div class="notice">La chiave si richiede nelle impostazioni sviluppatore del tuo account TMDB. Non inserire la password del tuo account.</div><div class="modal-actions"><button class="btn" id="tmdbClear">Rimuovi chiave</button><div class="right-actions"><button class="btn" data-close="tmdbModal">Annulla</button><button class="btn primary" id="tmdbSave">Salva e verifica</button></div></div></div></div>
 <div class="modal-back hidden" id="importModal"><div class="modal"><div class="modal-head"><h3>Importa la cronologia Netflix</h3><button class="x" data-close="importModal">×</button></div><p style="color:var(--muted);font-size:13px">CineTrack raggruppa gli episodi sotto una sola serie. Non importa mai le singole puntate come schede separate. I titoli ambigui vengono lasciati da verificare.</p><div class="import-box"><b>Seleziona il file CSV di Netflix</b><br><input type="file" id="csvFile" accept=".csv,text/csv"><div style="margin:12px auto 0;max-width:280px;text-align:left"><label for="importOwner" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">A chi appartiene questa cronologia?</label><select id="importOwner" style="width:100%"><option value="">Seleziona Umb o Lu…</option><option value="Umb">Umb</option><option value="Lu">Lu</option></select></div><br><button class="btn" id="analyzeNetflix" style="margin-top:12px" disabled>Analizza cronologia</button></div><div id="importResult" class="notice"></div><div id="importPreview" class="hidden" style="margin-top:14px"></div><div class="modal-actions"><button class="btn" data-close="importModal">Chiudi</button><button class="btn primary" id="confirmImport" disabled>Importa contenuti riconosciuti</button></div></div></div>
+
+<div id="ctAuthGate" style="position:fixed;inset:0;z-index:99999;background:#101820;color:#f4f7f8;display:flex;align-items:center;justify-content:center;padding:22px;font-family:inherit">
+ <div style="width:min(440px,100%);background:#192832;border:1px solid #344954;border-radius:18px;padding:24px;box-shadow:0 18px 60px #0008">
+  <div style="font-size:25px;font-weight:800;margin-bottom:6px">CineTrack condiviso</div>
+  <div style="color:#b8c8ce;font-size:14px;line-height:1.5;margin-bottom:18px">Accedi per usare la libreria comune Umb / Lu. Non serve un indirizzo email.</div>
+  <button id="ctStart" class="btn primary" style="width:100%">Inizia</button>
+  <div id="ctIdentity" style="display:none;margin-top:18px">
+   <div style="font-weight:700;margin-bottom:8px">Questo è il primo dispositivo?</div>
+   <label style="display:block;font-size:13px;margin:8px 0">Codice iniziale del proprietario (Umb)</label>
+   <input id="ctBootstrap" type="password" placeholder="Segreto iniziale" style="width:100%;padding:12px;border-radius:9px;border:1px solid #526873;background:#101820;color:white">
+   <button id="ctClaim" class="btn primary" style="width:100%;margin-top:8px">Attiva accesso Umb</button>
+   <div style="text-align:center;color:#9fb0b8;margin:14px 0">oppure</div>
+   <label style="display:block;font-size:13px;margin:8px 0">Codice d'invito ricevuto da Umb</label>
+   <input id="ctInvite" type="text" placeholder="Incolla codice invito" style="width:100%;padding:12px;border-radius:9px;border:1px solid #526873;background:#101820;color:white">
+   <button id="ctRedeem" class="btn" style="width:100%;margin-top:8px">Entra come Lu</button>
+  </div>
+  <div id="ctAuthStatus" style="font-size:13px;color:#c4d4d9;margin-top:12px"></div>
+ </div>
+</div>
+<div id="ctInvitePanel" style="display:none;position:fixed;inset:0;z-index:99998;background:#0009;align-items:center;justify-content:center;padding:20px">
+ <div style="background:#192832;color:white;padding:22px;border-radius:16px;width:min(420px,100%)">
+  <b>Invito per Lucrezia</b><p style="font-size:13px;color:#b8c8ce">Il codice è monouso e scade dopo 24 ore.</p>
+  <div id="ctInviteCode" style="word-break:break-all;font-weight:800;padding:12px;background:#101820;border-radius:8px"></div>
+  <button id="ctCopyInvite" class="btn primary" style="width:100%;margin-top:12px">Copia codice</button>
+  <button id="ctCloseInvite" class="btn" style="width:100%;margin-top:8px">Chiudi</button>
+ </div>
+</div>
+
+<button id="ctMakeInvite" class="btn" style="display:none;position:fixed;right:14px;bottom:14px;z-index:9000;box-shadow:0 5px 20px #0005">Invita Lu</button>
+
 <div id="toast" class="toast hidden"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase-config.js"></script>
 <script>
 const KEY='cinetrack_v04_clean_items',TMDB_KEY='cinetrack_v04_clean_tmdb_key';
-const RESET_ARCHIVE_FLAG='cinetrack_reset_archive_v093';
-const RESET_ARCHIVE_FLAG_V0102='cinetrack_reset_archive_v0102';
-const RESET_ARCHIVE_FLAG_V0105='cinetrack_reset_archive_v0105';
-if(!localStorage.getItem(RESET_ARCHIVE_FLAG_V0105)){localStorage.setItem(KEY,JSON.stringify([]));localStorage.setItem(RESET_ARCHIVE_FLAG_V0105,'1');}
-if(!localStorage.getItem(RESET_ARCHIVE_FLAG_V0102)){localStorage.setItem(KEY,JSON.stringify([]));localStorage.setItem(RESET_ARCHIVE_FLAG_V0102,'1');}
-if(!localStorage.getItem(RESET_ARCHIVE_FLAG)){
-  localStorage.setItem(KEY,JSON.stringify([]));
-  localStorage.setItem(RESET_ARCHIVE_FLAG,'1');
-}
 let items=load(),activeFilter='all',selectedDetail=null,pendingImport=[];
 const RATING_MIGRATION_KEY='cinetrack_rating_scale_v1';
 if(!localStorage.getItem(RATING_MIGRATION_KEY)){
@@ -59,7 +82,46 @@ if(!localStorage.getItem(RATING_MIGRATION_KEY)){
 }
 let tmdbKey=localStorage.getItem(TMDB_KEY)||'',tmdbSearchKind='all';
 const TMDB_IMG='https://image.tmdb.org/t/p/w500';
-function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}function save(){localStorage.setItem(KEY,JSON.stringify(items));render()}function normalizeWatchers(x){let a=Array.isArray(x.watchedBy)?x.watchedBy:[];return [...new Set(a.filter(v=>v==='Umb'||v==='Lu'))]}function watcherValue(x){let a=normalizeWatchers(x);return a.length===2?'both':a[0]||''}function watcherLabel(x){let a=normalizeWatchers(x);return a.length===2?'ENTRAMBI':a.length===1?a[0].toUpperCase():'NON ASSEGNATO'}function mergeWatcher(x,owner){let a=normalizeWatchers(x);if(owner==='Umb'||owner==='Lu')a=[...new Set([...a,owner])];x.watchedBy=a;return x}function uid(){return 'ct_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2400)}function statusName(s){return {completed:'Completato',watching:'In visione',watchlist:'Da guardare',abandoned:'Abbandonato'}[s]||s}
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
+let ctSyncReady=false,ctApplyingRemote=false,ctClient=null,ctUser=null,ctMember=null,ctKnownIds=new Set(),ctSaveTimer=null;
+function save(){localStorage.setItem(KEY,JSON.stringify(items));render();if(ctSyncReady&&!ctApplyingRemote){clearTimeout(ctSaveTimer);ctSaveTimer=setTimeout(ctPushChanges,250)}}
+async function ctPushChanges(){
+ if(!ctSyncReady||!ctClient||ctApplyingRemote)return;
+ const current=new Set(items.map(x=>String(x.id)));
+ const removed=[...ctKnownIds].filter(id=>!current.has(id));
+ if(removed.length){const {error}=await ctClient.from('cinetrack_items').delete().in('id',removed);if(error){console.error(error);toast('Sincronizzazione eliminazioni non riuscita');return}removed.forEach(id=>ctKnownIds.delete(id))}
+ const rows=items.map(x=>({id:String(x.id),payload:x,updated_by:ctUser.id}));
+ if(rows.length){const {error}=await ctClient.from('cinetrack_items').upsert(rows,{onConflict:'id'});if(error){console.error(error);toast('Sincronizzazione non riuscita');return}rows.forEach(r=>ctKnownIds.add(r.id))}
+}
+async function ctApplyRemote(){
+ const {data,error}=await ctClient.from('cinetrack_items').select('id,payload');
+ if(error)throw error;
+ ctApplyingRemote=true;items=(data||[]).map(r=>r.payload).filter(Boolean);ctKnownIds=new Set((data||[]).map(r=>String(r.id)));
+ localStorage.setItem(KEY,JSON.stringify(items));render();ctApplyingRemote=false;
+}
+function ctSubscribe(){
+ ctClient.channel('cinetrack-live-items').on('postgres_changes',{event:'*',schema:'public',table:'cinetrack_items'},async payload=>{
+  if(!ctSyncReady)return;
+  const id=String((payload.new&&payload.new.id)||(payload.old&&payload.old.id)||'');
+  ctApplyingRemote=true;
+  if(payload.eventType==='DELETE'){items=items.filter(x=>String(x.id)!==id);ctKnownIds.delete(id)}
+  else if(payload.new&&payload.new.payload){const ix=items.findIndex(x=>String(x.id)===id);if(ix>=0)items[ix]=payload.new.payload;else items.push(payload.new.payload);ctKnownIds.add(id)}
+  localStorage.setItem(KEY,JSON.stringify(items));render();ctApplyingRemote=false;
+ }).subscribe();
+}
+async function ctCallAccess(body){
+ const {data,error}=await ctClient.functions.invoke('cinetrack-access',{body});
+ if(error)throw error; if(data&&data.error)throw new Error(data.error);return data;
+}
+async function ctFinishAuth(){
+ const {data,error}=await ctClient.from('cinetrack_members').select('display_name,role').eq('user_id',ctUser.id).maybeSingle();
+ if(error)throw error;
+ if(!data){document.getElementById('ctIdentity').style.display='block';return}
+ ctMember=data;document.getElementById('ctAuthGate').style.display='none';
+ document.getElementById('ctMakeInvite').style.display=data.role==='owner'?'block':'none';
+ await ctApplyRemote();ctSyncReady=true;ctSubscribe();render();
+}
+function normalizeWatchers(x){let a=Array.isArray(x.watchedBy)?x.watchedBy:[];return [...new Set(a.filter(v=>v==='Umb'||v==='Lu'))]}function watcherValue(x){let a=normalizeWatchers(x);return a.length===2?'both':a[0]||''}function watcherLabel(x){let a=normalizeWatchers(x);return a.length===2?'ENTRAMBI':a.length===1?a[0].toUpperCase():'NON ASSEGNATO'}function mergeWatcher(x,owner){let a=normalizeWatchers(x);if(owner==='Umb'||owner==='Lu')a=[...new Set([...a,owner])];x.watchedBy=a;return x}function uid(){return 'ct_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2400)}function statusName(s){return {completed:'Completato',watching:'In visione',watchlist:'Da guardare',abandoned:'Abbandonato'}[s]||s}
 function reactionIcon(kind){
   const paths={
     dislike:'<path d="M7 14v-9"/><path d="M15 18.8 14 14H19.2a2 2 0 0 0 1.9-2.6L19 5.2a2 2 0 0 0-1.9-1.3H9.8a2 2 0 0 0-1.6.8L5 8.5V14l2.5 4.1a2 2 0 0 0 1.7.9h3.9a2 2 0 0 0 1.9-2.4Z"/><path d="M3 6h4v8H3z"/>',
@@ -177,7 +239,37 @@ setTimeout(()=>{let saved=items.find(i=>i.id===(id||items[items.length-1]?.id));
 async function refreshSeries(id){let x=items.find(i=>i.id===id);if(!x||!x.tmdbId){toast('Questa serie non è ancora collegata a TMDB');return}try{let d=await tmdb('/tv/'+x.tmdbId);let oldSeasonStates=new Map((x.seasons||[]).map(s=>[Number(s.season_number),s.watchStatus||'watchlist']));x.seasons=(d.seasons||[]).map(s=>({season_number:s.season_number,name:s.name,episode_count:s.episode_count,air_date:s.air_date,poster_path:s.poster_path,watchStatus:oldSeasonStates.get(Number(s.season_number))||'watchlist'}));x.tmdbStatus=d.status||x.tmdbStatus;x.overview=d.overview||x.overview;x.lastTmdbSync=Date.now();save();showDetail(id);toast('Stagioni aggiornate')}catch(e){toast(e.message)}}
 async function refreshStaleSeries(){if(!tmdbKey)return;let stale=items.filter(x=>x.type==='serie'&&x.tmdbId&&(!x.lastTmdbSync||Date.now()-x.lastTmdbSync>7*24*60*60*1000));for(let x of stale){try{let d=await tmdb('/tv/'+x.tmdbId);let oldSeasonStates=new Map((x.seasons||[]).map(s=>[Number(s.season_number),s.watchStatus||'watchlist']));x.seasons=(d.seasons||[]).map(s=>({season_number:s.season_number,name:s.name,episode_count:s.episode_count,air_date:s.air_date,poster_path:s.poster_path,watchStatus:oldSeasonStates.get(Number(s.season_number))||'watchlist'}));x.tmdbStatus=d.status||x.tmdbStatus;x.overview=d.overview||x.overview;x.lastTmdbSync=Date.now()}catch(e){console.warn('Aggiornamento TMDB non riuscito',e.message)}}if(stale.length)save()}
 
-render();refreshStaleSeries();
+
+async function ctBoot(){
+ const status=document.getElementById('ctAuthStatus');
+ try{
+  if(!window.supabase||!window.CINETRACK_CONFIG||!CINETRACK_CONFIG.url||!CINETRACK_CONFIG.publishableKey||CINETRACK_CONFIG.url.includes('INSERISCI')){
+   status.textContent='Configurazione Supabase mancante: completa supabase-config.js prima della pubblicazione.';return;
+  }
+  ctClient=window.supabase.createClient(CINETRACK_CONFIG.url,CINETRACK_CONFIG.publishableKey);
+  const {data:{session}}=await ctClient.auth.getSession();
+  if(session){ctUser=session.user;await ctFinishAuth()}
+ }catch(e){console.error(e);status.textContent='Errore di avvio: '+e.message}
+}
+document.getElementById('ctStart').onclick=async()=>{
+ const status=document.getElementById('ctAuthStatus');status.textContent='Connessione…';
+ try{const {data,error}=await ctClient.auth.signInAnonymously();if(error)throw error;ctUser=data.user;await ctFinishAuth();}catch(e){status.textContent=e.message}
+};
+document.getElementById('ctClaim').onclick=async()=>{
+ const status=document.getElementById('ctAuthStatus');status.textContent='Attivazione Umb…';
+ try{await ctCallAccess({action:'bootstrap-owner',bootstrapSecret:document.getElementById('ctBootstrap').value});await ctFinishAuth()}catch(e){status.textContent=e.message}
+};
+document.getElementById('ctRedeem').onclick=async()=>{
+ const status=document.getElementById('ctAuthStatus');status.textContent='Verifica invito…';
+ try{await ctCallAccess({action:'redeem-invite',code:document.getElementById('ctInvite').value});await ctFinishAuth()}catch(e){status.textContent=e.message}
+};
+document.getElementById('ctMakeInvite').onclick=async()=>{
+ try{const d=await ctCallAccess({action:'create-invite'});document.getElementById('ctInviteCode').textContent=d.code;document.getElementById('ctInvitePanel').style.display='flex'}catch(e){toast(e.message)}
+};
+document.getElementById('ctCopyInvite').onclick=()=>navigator.clipboard.writeText(document.getElementById('ctInviteCode').textContent).then(()=>toast('Codice copiato'));
+document.getElementById('ctCloseInvite').onclick=()=>document.getElementById('ctInvitePanel').style.display='none';
+ctBoot();
+
 </script>
 <script>
 if ('serviceWorker' in navigator) {
