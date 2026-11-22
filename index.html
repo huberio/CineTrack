@@ -19,10 +19,69 @@
 .detail-stars button.half{background:linear-gradient(90deg,var(--accent) 50%,#687080 50%);background-clip:text;-webkit-background-clip:text;color:transparent}
 .detail-stars .clear-rating{font-size:11px;color:var(--muted);margin-left:8px;padding:5px 7px;border:1px solid var(--line);border-radius:6px}.detail-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.chip{border:1px solid var(--line);border-radius:7px;padding:5px 8px;color:var(--muted);font-size:11px}.notice{color:var(--muted);font-size:12px;margin-top:16px;line-height:1.5}.tmdb-results{display:grid;gap:8px;margin-top:12px}.tmdb-result{display:flex;gap:11px;align-items:center;padding:9px;border:1px solid var(--line);border-radius:10px;background:#11131a;text-align:left;color:var(--text);width:100%}.tmdb-result img{width:43px;height:64px;object-fit:cover;border-radius:6px;background:#292d39}.tmdb-result small{display:block;color:var(--muted)}.season-list{display:grid;gap:8px;margin-top:12px}.season-item{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;background:#11131a;border:1px solid var(--line);border-radius:9px}.season-item small{color:var(--muted)}.tmdb-bar{display:flex;gap:8px}.tmdb-bar input{flex:1;min-width:0}.search-kind{display:flex;gap:6px;margin-top:9px}.kind-btn{border:1px solid var(--line);background:#11131a;color:var(--muted);padding:7px 12px;border-radius:8px;font-size:12px}.kind-btn.active{background:#302a1e;border-color:#715b32;color:#f4d69c}.season-item{align-items:center}.season-controls{display:flex;align-items:center;gap:8px}.season-controls select{padding:7px 8px;font-size:12px;max-width:145px}.season-progress{color:var(--muted);font-size:11px;margin-top:3px}.import-box{border:1px dashed #51586a;border-radius:12px;padding:18px;text-align:center}#importPreview details{background:#11131a;border:1px solid var(--line);border-radius:9px;padding:10px 12px}#importPreview summary{cursor:pointer}#importPreview ul{margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:12px}#importPreview li{margin:4px 0}#importPreview small{color:var(--muted)}.import-box input{max-width:100%;margin-top:12px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#f4f5f8;color:#16171b;padding:11px 17px;border-radius:10px;font-weight:700;z-index:9;box-shadow:0 8px 30px #0007}.footer{color:#747b8c;text-align:center;font-size:11px;margin-top:48px}
 @media(max-width:700px){.app{padding:18px 15px 45px}.top{align-items:flex-start}.top-actions .btn span{display:none}.hero{display:block}.hero>.btn{margin-top:15px}.stats{grid-template-columns:repeat(2,1fr);gap:9px}.stat{padding:13px}.stat strong{font-size:23px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.toolbar{gap:8px}.toolbar select{flex:1;min-width:120px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.detail-top{gap:13px}.detail-poster{width:96px}}
+
+/* CineTrack visual refresh — mobile-first, presentation only */
+.brand{gap:18px;min-width:0}.brand-logo{display:block;width:174px;max-width:42vw;height:auto;flex:none}.brand-copy h1{font-size:17px;font-weight:700;letter-spacing:.1px;margin:0 0 3px;color:var(--text)}.brand-copy p{font-size:12px;color:var(--muted);margin:0;white-space:nowrap}
+.top{align-items:center;margin-bottom:26px}.top-actions{align-items:center;gap:9px}
+.icon-action{width:48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--line);border-radius:15px;background:var(--panel2);color:var(--text);position:relative}
+.icon-action span{display:block;line-height:1;position:relative}
+.settings-glyph{font-size:25px;top:0px}.export-glyph{font-size:29px;top:-1px}
+.add-action{background:var(--accent);border-color:var(--accent);color:#171717;border-radius:14px}
+.add-glyph{font-size:40px;font-weight:600;top:-5px}
+.settings-wrap{position:relative}.settings-menu{position:absolute;right:0;top:calc(100% + 10px);width:min(260px,calc(100vw - 36px));padding:9px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 48px #0009;z-index:30}
+.settings-menu-title{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);padding:8px 10px 9px;font-weight:750}
+.settings-item{display:flex;align-items:center;width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:11px 10px;border-radius:8px;font-size:13px;font-weight:550}
+.settings-item:hover{background:var(--panel2)}.settings-divider{height:1px;background:var(--line);margin:6px 3px}
+.owner-action{display:none}
+select{padding-right:30px;background-position:right 12px center}
+.reaction-icon{width:25px;height:25px;object-fit:contain;display:block}
+.modal-back{padding:12px}.modal{width:min(600px,100%);max-height:calc(100dvh - 24px);padding:18px;border-radius:16px}
+#detailModal .modal{width:min(560px,100%);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+#detailModal .detail-top{gap:12px;align-items:flex-start}#detailModal .detail-poster{width:clamp(76px,24vw,104px);border-radius:9px}
+#detailModal .detail-copy{min-width:0;flex:1}#detailModal .detail-copy h2{font-size:clamp(18px,5vw,23px);line-height:1.18;overflow-wrap:anywhere}
+#detailModal .detail-status{flex-wrap:wrap;gap:6px;margin:7px 0}#detailModal .detail-status select{min-width:0;max-width:100%;padding:6px 8px}
+#detailModal .reaction-group{gap:7px;margin:10px 0}#detailModal .reaction-btn{width:39px;height:39px}#detailModal .reaction-icon{width:23px;height:23px}
+#detailModal .season-item{align-items:flex-start;flex-wrap:wrap;gap:8px;padding:9px}
+#detailModal .season-controls{width:100%;justify-content:flex-end}#detailModal .season-controls select{max-width:100%;width:100%}
+#detailModal .modal-actions{position:sticky;bottom:-18px;background:var(--panel);padding:12px 0 0;margin-top:14px}
+@media(max-width:700px){
+ .app{padding:14px 15px 38px}.top{gap:10px;margin-bottom:22px;align-items:center}
+ .brand{gap:10px}.brand-logo{width:118px;max-width:34vw}.brand-copy h1{font-size:13px;letter-spacing:0}.brand-copy p{font-size:10px;white-space:normal;line-height:1.25;max-width:155px}
+ .top-actions{gap:7px}.icon-action{width:46px;height:46px;border-radius:14px}
+ .settings-glyph{font-size:25px;top:0}.export-glyph{font-size:29px;top:-1px}.add-glyph{font-size:40px;font-weight:600;top:-5px}
+ .toolbar{padding:10px;gap:8px}.toolbar .search{flex:1 1 100%;min-width:100%}.toolbar select{flex:1 1 calc(50% - 4px);min-width:0;width:calc(50% - 4px);padding-right:30px}
+ .stats{margin:17px 0}.tabs{gap:6px}.tab{padding:7px 10px;font-size:12px}
+ .section-head{margin:13px 0}.section-head h3{font-size:16px}
+ .modal-back{padding:8px}.modal{padding:15px;max-height:calc(100dvh - 16px)}
+ #detailModal .modal{max-height:calc(100dvh - 16px);padding:14px}
+ #detailModal .detail-top{gap:10px}#detailModal .detail-poster{width:82px}
+ #detailModal .detail-copy h2{font-size:18px}
+ #detailModal .detail-copy p{font-size:12px;line-height:1.35}
+ #detailModal .detail-status label{font-size:11px}
+ #detailModal .reaction-caption{display:none}
+ #detailModal .detail-row{margin-top:10px}
+}
+@media(max-width:390px){.brand-logo{width:100px}.brand-copy h1{font-size:12px}.brand-copy p{max-width:130px;font-size:9px}.top-actions{gap:5px}.icon-action{width:42px;height:42px}}
+
 </style></head>
 <body><main class="app">
-<header class="top"><div class="brand"><div class="logo">▶</div><div><h1>CineTrack</h1><small>Il tuo archivio personale</small></div></div><div class="top-actions"><button class="btn" id="tmdbSettingsBtn">⚙ <span>TMDB</span></button><button class="btn" id="exportBtn">⇩ <span>Esporta archivio</span></button><button class="btn primary" id="addBtn">＋ <span>Aggiungi</span></button></div></header>
-<section class="hero"><div><div class="eyebrow">La tua storia, fotogramma dopo fotogramma</div><h2>La tua libreria.</h2><p>Tutto quello che hai visto, in un unico posto.</p></div></section>
+<header class="top">
+  <div class="brand"><img class="brand-logo" src="./icons/cinetrack-orizzontale.svg" alt="CineTrack"><div class="brand-copy"><h1>LA TUA LIBRERIA</h1><p>Tutto quello che hai visto, in un unico posto.</p></div></div>
+  <div class="top-actions">
+    <div class="settings-wrap"><button class="icon-action" id="settingsToggle" type="button" aria-label="Impostazioni" aria-expanded="false"><span class="settings-glyph">⚙</span></button>
+      <div class="settings-menu hidden" id="settingsMenu">
+        <div class="settings-menu-title">Impostazioni</div>
+        <button class="settings-item" id="tmdbSettingsBtn" type="button">Collega TMDB</button>
+        <button class="settings-item" id="importNetflixMenu" type="button">Importa Netflix</button>
+        <button class="settings-item" id="recoverPostersMenu" type="button">Recupera locandine</button>
+        <div class="settings-divider"></div>
+        <div id="ownerMenuActions"></div>
+      </div>
+    </div>
+    <button class="icon-action" id="exportBtn" type="button" aria-label="Esporta archivio"><span class="export-glyph">⇩</span></button>
+    <button class="icon-action add-action" id="addBtn" type="button" aria-label="Aggiungi"><span class="add-glyph">+</span></button>
+  </div>
+</header>
 <section class="stats"><div class="stat"><span>Contenuti in archivio</span><strong id="totalStat">0</strong></div><div class="stat"><span>Film</span><strong id="filmsStat">0</strong></div><div class="stat"><span>Serie TV</span><strong id="seriesStat">0</strong></div><div class="stat"><span>Titoli valutati</span><strong id="avgStat">0</strong></div></section>
 <div class="toolbar"><div class="search"><input id="search" placeholder="Cerca nella tua libreria…" autocomplete="off"></div><select id="platformFilter"><option value="">Tutte le piattaforme</option></select><select id="watcherFilter"><option value="">Chiunque</option><option value="Umb">Umb</option><option value="Lu">Lu</option><option value="both">Entrambi</option></select><select id="viewYearFilter"><option value="">Tutti gli anni di visione</option></select><select id="sort"><option value="recent">Aggiunti di recente</option><option value="az">Titolo A–Z</option><option value="rating">Voto più alto</option><option value="year">Anno di uscita</option><option value="viewRecent" selected>Visti più di recente</option><option value="viewOldest">Visti meno di recente</option></select></div>
 <nav class="tabs"><button class="tab active" data-filter="all">Tutti</button><button class="tab" data-filter="film">Film</button><button class="tab" data-filter="serie">Serie TV</button><button class="tab" data-filter="watching">In visione</button><button class="tab" data-filter="completed">Completati</button><button class="tab" data-filter="watchlist">Da guardare</button><button class="tab" data-filter="rated">Valutati</button></nav>
@@ -79,8 +138,8 @@
  </div>
 </div>
 
-<button id="ctMakeInvite" class="btn" style="display:none;position:fixed;right:14px;bottom:14px;z-index:9000;box-shadow:0 5px 20px #0005">Invita Lu</button>
-<button id="ctMakeDeviceCode" class="btn primary" style="display:none;position:fixed;right:14px;bottom:64px;z-index:9000;box-shadow:0 5px 20px #0005">Collega dispositivo</button>
+<button id="ctMakeInvite" class="settings-item owner-action" type="button" style="display:none">Invita Lu</button>
+<button id="ctMakeDeviceCode" class="settings-item owner-action" type="button" style="display:none">Collega dispositivo</button>
 <div id="ctDeviceCodePanel" style="display:none;position:fixed;inset:0;z-index:99998;background:#0009;align-items:center;justify-content:center;padding:20px">
  <div style="background:#192832;color:white;padding:22px;border-radius:16px;width:min(440px,100%)">
   <b>Collega un nuovo dispositivo Umb</b>
@@ -95,6 +154,17 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase-config.js"></script>
 <script>
+
+const settingsToggle=document.getElementById('settingsToggle');
+const settingsMenu=document.getElementById('settingsMenu');
+function closeSettingsMenu(){settingsMenu.classList.add('hidden');settingsToggle.setAttribute('aria-expanded','false')}
+settingsToggle.addEventListener('click',e=>{e.stopPropagation();const open=settingsMenu.classList.contains('hidden');settingsMenu.classList.toggle('hidden',!open);settingsToggle.setAttribute('aria-expanded',String(open))});
+document.addEventListener('click',e=>{if(!e.target.closest('.settings-wrap'))closeSettingsMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettingsMenu()});
+const ownerMenuActions=document.getElementById('ownerMenuActions');
+ownerMenuActions.append(document.getElementById('ctMakeInvite'),document.getElementById('ctMakeDeviceCode'));
+document.getElementById('tmdbSettingsBtn').classList.add('settings-item');
+
 const KEY='cinetrack_v04_clean_items',TMDB_KEY='cinetrack_v04_clean_tmdb_key';
 let items=load(),activeFilter='all',selectedDetail=null,pendingImport=[];
 const RATING_MIGRATION_KEY='cinetrack_rating_scale_v1';
@@ -170,8 +240,8 @@ async function ctFinishAuth(){
   ctMember=data;
   document.getElementById('ctAuthGate').style.display='none';
   const isOwner=data.role==='owner'&&data.display_name==='Umb';
-  document.getElementById('ctMakeInvite').style.display=isOwner?'block':'none';
-  document.getElementById('ctMakeDeviceCode').style.display=isOwner?'block':'none';
+  document.getElementById('ctMakeInvite').style.display=isOwner?'flex':'none';
+  document.getElementById('ctMakeDeviceCode').style.display=isOwner?'flex':'none';
   await ctApplyRemote();
   ctSyncReady=true;
   ctSubscribe();
@@ -184,12 +254,9 @@ async function ctFinishAuth(){
 }
 function normalizeWatchers(x){let a=Array.isArray(x.watchedBy)?x.watchedBy:[];return [...new Set(a.filter(v=>v==='Umb'||v==='Lu'))]}function watcherValue(x){let a=normalizeWatchers(x);return a.length===2?'both':a[0]||''}function watcherLabel(x){let a=normalizeWatchers(x);return a.length===2?'ENTRAMBI':a.length===1?a[0].toUpperCase():'NON ASSEGNATO'}function mergeWatcher(x,owner){let a=normalizeWatchers(x);if(owner==='Umb'||owner==='Lu')a=[...new Set([...a,owner])];x.watchedBy=a;return x}function uid(){return 'ct_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2400)}function statusName(s){return {completed:'Completato',watching:'In visione',watchlist:'Da guardare',abandoned:'Abbandonato'}[s]||s}
 function reactionIcon(kind){
-  const paths={
-    dislike:'<path d="M7 14v-9"/><path d="M15 18.8 14 14H19.2a2 2 0 0 0 1.9-2.6L19 5.2a2 2 0 0 0-1.9-1.3H9.8a2 2 0 0 0-1.6.8L5 8.5V14l2.5 4.1a2 2 0 0 0 1.7.9h3.9a2 2 0 0 0 1.9-2.4Z"/><path d="M3 6h4v8H3z"/>',
-    like:'<path d="M7 10v10"/><path d="M15 5.2 14 10h5.2a2 2 0 0 1 1.9 2.6l-2.1 6.2a2 2 0 0 1-1.9 1.3H9.8a2 2 0 0 1-1.6-.8L5 15.5V10l2.5-4.1A2 2 0 0 1 9.2 5h3.9a2 2 0 0 1 1.9 2.4Z"/><path d="M3 10h4v8H3z"/>',
-    love:'<path d="M20.8 8.8c0 5.2-8.8 11-8.8 11s-8.8-5.8-8.8-11A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/>'
-  };
-  return `<svg class="reaction-icon" viewBox="0 0 24 24" aria-hidden="true">${paths[kind]||''}</svg>`;
+  const icons={dislike:'reaction-dislike.svg',like:'reaction-like.svg',love:'reaction-superlike.svg'};
+  const src=icons[kind];
+  return src?`<img class="reaction-icon" src="./icons/${src}" alt="" aria-hidden="true">`:'';
 }
 
 function render(){
@@ -261,8 +328,8 @@ document.getElementById('confirmImport').onclick=async()=>{if(!netflixPreview)re
 // Import button lives in settings menu in this MVP: keyboard shortcut Ctrl/Cmd+I.
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='i'){e.preventDefault();document.getElementById('importModal').classList.remove('hidden')}});
 // Add a visible import entry beside the library title.
-let importBtn=document.createElement('button');importBtn.className='btn';importBtn.textContent='⇧ Importa Netflix';importBtn.onclick=()=>document.getElementById('importModal').classList.remove('hidden');document.querySelector('.section-head').appendChild(importBtn);
-let posterFixBtn=document.createElement('button');posterFixBtn.className='btn';posterFixBtn.textContent='▧ Recupera locandine film';posterFixBtn.onclick=repairMissingFilmPosters;document.querySelector('.section-head').appendChild(posterFixBtn);
+document.getElementById('importNetflixMenu').onclick=()=>{document.getElementById('importModal').classList.remove('hidden');closeSettingsMenu()};
+document.getElementById('recoverPostersMenu').onclick=()=>{repairMissingFilmPosters();closeSettingsMenu()};
 
 // --- Integrazione TMDB: ricerca localizzata e metadati completi delle serie ---
 async function tmdb(path,params={}){if(!tmdbKey)throw new Error('Configura prima la chiave API TMDB.');let u=new URL('https://api.themoviedb.org/3'+path);u.searchParams.set('api_key',tmdbKey);u.searchParams.set('language','it-IT');Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));let r=await fetch(u);if(!r.ok)throw new Error(r.status===401?'Chiave TMDB non valida.':`Errore TMDB (${r.status}).`);return r.json()}
