@@ -115,9 +115,8 @@ select{padding-right:30px;background-position:right 12px center}
 <div class="modal-back hidden" id="importModal"><div class="modal"><div class="modal-head"><h3>Importa la cronologia Netflix</h3><button class="x" data-close="importModal">×</button></div><p style="color:var(--muted);font-size:13px">CineTrack raggruppa gli episodi sotto una sola serie. Non importa mai le singole puntate come schede separate. I titoli ambigui vengono lasciati da verificare.</p><div class="import-box"><b>Seleziona il file CSV di Netflix</b><br><input type="file" id="csvFile" accept=".csv,text/csv"><div style="margin:12px auto 0;max-width:280px;text-align:left"><label for="importOwner" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">A chi appartiene questa cronologia?</label><select id="importOwner" style="width:100%"><option value="">Seleziona Umb o Lu…</option><option value="Umb">Umb</option><option value="Lu">Lu</option></select></div><br><button class="btn" id="analyzeNetflix" style="margin-top:12px" disabled>Analizza cronologia</button></div><div id="importResult" class="notice"></div><div id="importPreview" class="hidden" style="margin-top:14px"></div><div class="modal-actions"><button class="btn" data-close="importModal">Chiudi</button><button class="btn primary" id="confirmImport" disabled>Importa contenuti riconosciuti</button></div></div></div>
 
 <div id="ctAuthGate" style="position:fixed;inset:0;z-index:99999;background:#101820;color:#f4f7f8;display:flex;align-items:center;justify-content:center;padding:22px;font-family:inherit">
-  <div id="ctAuthLoading" style="width:min(440px,100%);background:#192832;border:1px solid #344954;border-radius:18px;padding:28px 24px;box-shadow:0 18px 60px #0008;text-align:center">
-    <img id="ctSplashIcon" src="./icons/icon.svg?v=3" alt="CineTrack" style="display:block;width:112px;height:112px;object-fit:contain;margin:0 auto">
-    <img id="ctSplashLogo" src="./icons/cinetrack-orizzontale.svg" alt="CineTrack" style="display:none;width:min(230px,75%);height:auto;margin:0 auto 18px">
+  <div id="ctAuthLoading" style="width:100%;background:transparent;border:0;border-radius:0;padding:0;box-shadow:none;text-align:center">
+    <img id="ctSplashLogo" src="./icons/cinetrack-orizzontale.svg" alt="CineTrack" style="display:block;width:min(360px,82%);height:auto;margin:0 auto">
     <div id="ctSplashLabel" style="display:none;color:#b8c8ce;font-size:14px">Caricamento libreria…</div>
   </div>
   <div id="ctAuthPanel" style="display:none;width:min(440px,100%);background:#192832;border:1px solid #344954;border-radius:18px;padding:24px;box-shadow:0 18px 60px #0008">
@@ -208,11 +207,21 @@ async function ctWaitSplash(){
  if(remaining>0) await new Promise(resolve=>setTimeout(resolve,remaining));
 }
 setTimeout(()=>{
- const icon=document.getElementById('ctSplashIcon');
+ const card=document.getElementById('ctAuthLoading');
  const logo=document.getElementById('ctSplashLogo');
  const label=document.getElementById('ctSplashLabel');
- if(icon) icon.style.display='none';
- if(logo) logo.style.display='block';
+ if(card){
+  card.style.width='min(440px,100%)';
+  card.style.background='#192832';
+  card.style.border='1px solid #344954';
+  card.style.borderRadius='18px';
+  card.style.padding='28px 24px';
+  card.style.boxShadow='0 18px 60px #0008';
+ }
+ if(logo){
+  logo.style.width='min(230px,75%)';
+  logo.style.margin='0 auto 18px';
+ }
  if(label) label.style.display='block';
 },2000);
 function save(){localStorage.setItem(KEY,JSON.stringify(items));render();if(ctSyncReady&&!ctApplyingRemote){clearTimeout(ctSaveTimer);ctSaveTimer=setTimeout(ctPushChanges,250)}}
