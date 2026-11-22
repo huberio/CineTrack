@@ -80,6 +80,16 @@
 </div>
 
 <button id="ctMakeInvite" class="btn" style="display:none;position:fixed;right:14px;bottom:14px;z-index:9000;box-shadow:0 5px 20px #0005">Invita Lu</button>
+<button id="ctMakeDeviceCode" class="btn primary" style="display:none;position:fixed;right:14px;bottom:64px;z-index:9000;box-shadow:0 5px 20px #0005">Collega dispositivo</button>
+<div id="ctDeviceCodePanel" style="display:none;position:fixed;inset:0;z-index:99998;background:#0009;align-items:center;justify-content:center;padding:20px">
+ <div style="background:#192832;color:white;padding:22px;border-radius:16px;width:min(440px,100%)">
+  <b>Collega un nuovo dispositivo Umb</b>
+  <p style="font-size:13px;color:#b8c8ce">Questo codice è monouso e scade dopo 10 minuti. Inseriscilo nel nuovo dispositivo.</p>
+  <div id="ctDeviceCodeOutput" style="overflow-wrap:anywhere;font-weight:800;letter-spacing:1px;padding:12px;background:#101820;border-radius:8px;font-size:13px"></div>
+  <button id="ctCopyDeviceCode" class="btn primary" style="width:100%;margin-top:12px">Copia codice</button>
+  <button id="ctCloseDeviceCode" class="btn" style="width:100%;margin-top:8px">Chiudi</button>
+ </div>
+</div>
 
 <div id="toast" class="toast hidden"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -111,8 +121,13 @@ async function ctPushChanges(){
 async function ctApplyRemote(){
  const {data,error}=await ctClient.from('cinetrack_items').select('id,payload');
  if(error)throw error;
- ctApplyingRemote=true;items=(data||[]).map(r=>r.payload).filter(Boolean);ctKnownIds=new Set((data||[]).map(r=>String(r.id)));
- localStorage.setItem(KEY,JSON.stringify(items));render();ctApplyingRemote=false;
+ ctApplyingRemote=true;
+ try{
+  items=(data||[]).map(r=>r.payload).filter(Boolean);
+  ctKnownIds=new Set((data||[]).map(r=>String(r.id)));
+  localStorage.setItem(KEY,JSON.stringify(items));
+  render();
+ }finally{ctApplyingRemote=false}
 }
 function ctSubscribe(){
  ctClient.channel('cinetrack-live-items').on('postgres_changes',{event:'*',schema:'public',table:'cinetrack_items'},async payload=>{
@@ -126,15 +141,46 @@ function ctSubscribe(){
 }
 async function ctCallAccess(body){
  const {data,error}=await ctClient.functions.invoke('cinetrack-access',{body});
- if(error)throw error; if(data&&data.error)throw new Error(data.error);return data;
+ if(error){
+  let message=error.message||'Errore nella funzione di accesso';
+  try{
+   const response=error.context;
+   if(response&&typeof response.clone==='function'){
+    const payload=await response.clone().json();
+    if(payload&&payload.error)message=payload.error;
+   }
+  }catch(_){}
+  throw new Error(message);
+ }
+ if(data&&data.error)throw new Error(data.error);
+ return data;
 }
 async function ctFinishAuth(){
- const {data,error}=await ctClient.from('cinetrack_members').select('display_name,role').eq('user_id',ctUser.id).maybeSingle();
- if(error)throw error;
- if(!data){document.getElementById('ctIdentity').style.display='block';return}
- ctMember=data;document.getElementById('ctAuthGate').style.display='none';
- document.getElementById('ctMakeInvite').style.display=data.role==='owner'?'block':'none';
- await ctApplyRemote();ctSyncReady=true;ctSubscribe();render();
+ const status=document.getElementById('ctAuthStatus');
+ try{
+  const result=await ctCallAccess({action:'get-member'});
+  const data=result&&result.member;
+  if(!data){
+   document.getElementById('ctIdentity').style.display='block';
+   document.getElementById('ctAuthGate').style.display='flex';
+   document.getElementById('ctMakeInvite').style.display='none';
+   document.getElementById('ctMakeDeviceCode').style.display='none';
+   return;
+  }
+  ctMember=data;
+  document.getElementById('ctAuthGate').style.display='none';
+  const isOwner=data.role==='owner'&&data.display_name==='Umb';
+  document.getElementById('ctMakeInvite').style.display=isOwner?'block':'none';
+  document.getElementById('ctMakeDeviceCode').style.display=isOwner?'block':'none';
+  await ctApplyRemote();
+  ctSyncReady=true;
+  ctSubscribe();
+  render();
+ }catch(e){
+  console.error('Errore verifica membro:',e);
+  status.textContent='Errore di accesso: '+(e.message||'verifica non riuscita');
+  throw e;
+ }
 }
 function normalizeWatchers(x){let a=Array.isArray(x.watchedBy)?x.watchedBy:[];return [...new Set(a.filter(v=>v==='Umb'||v==='Lu'))]}function watcherValue(x){let a=normalizeWatchers(x);return a.length===2?'both':a[0]||''}function watcherLabel(x){let a=normalizeWatchers(x);return a.length===2?'ENTRAMBI':a.length===1?a[0].toUpperCase():'NON ASSEGNATO'}function mergeWatcher(x,owner){let a=normalizeWatchers(x);if(owner==='Umb'||owner==='Lu')a=[...new Set([...a,owner])];x.watchedBy=a;return x}function uid(){return 'ct_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2400)}function statusName(s){return {completed:'Completato',watching:'In visione',watchlist:'Da guardare',abandoned:'Abbandonato'}[s]||s}
 function reactionIcon(kind){
@@ -274,10 +320,40 @@ document.getElementById('ctClaim').onclick=async()=>{
  const status=document.getElementById('ctAuthStatus');status.textContent='Attivazione Umb…';
  try{await ctCallAccess({action:'bootstrap-owner',bootstrapSecret:document.getElementById('ctBootstrap').value});await ctFinishAuth()}catch(e){status.textContent=e.message}
 };
+document.getElementById('ctLinkDevice').onclick=async()=>{
+ const status=document.getElementById('ctAuthStatus');
+ const code=document.getElementById('ctDeviceCode').value.trim();
+ if(!code){status.textContent='Incolla prima il codice generato dal dispositivo Umb.';return}
+ status.textContent='Collegamento del dispositivo…';
+ const button=document.getElementById('ctLinkDevice');button.disabled=true;
+ try{
+  await ctCallAccess({action:'redeem-device-code',code});
+  status.textContent='Dispositivo collegato. Caricamento libreria…';
+  await ctFinishAuth();
+ }catch(e){
+  console.error(e);
+  status.textContent=e.message||'Impossibile collegare il dispositivo.';
+ }finally{button.disabled=false}
+};
 document.getElementById('ctRedeem').onclick=async()=>{
  const status=document.getElementById('ctAuthStatus');status.textContent='Verifica invito…';
  try{await ctCallAccess({action:'redeem-invite',code:document.getElementById('ctInvite').value});await ctFinishAuth()}catch(e){status.textContent=e.message}
 };
+document.getElementById('ctMakeDeviceCode').onclick=async()=>{
+ const button=document.getElementById('ctMakeDeviceCode');button.disabled=true;
+ try{
+  const d=await ctCallAccess({action:'create-device-code'});
+  document.getElementById('ctDeviceCodeOutput').textContent=d.code;
+  document.getElementById('ctDeviceCodePanel').style.display='flex';
+ }catch(e){console.error(e);toast(e.message||'Non è stato possibile generare il codice')}
+ finally{button.disabled=false}
+};
+document.getElementById('ctCopyDeviceCode').onclick=async()=>{
+ const code=document.getElementById('ctDeviceCodeOutput').textContent;
+ try{await navigator.clipboard.writeText(code);toast('Codice dispositivo copiato')}
+ catch(e){toast('Copia non disponibile: seleziona e copia il codice manualmente')}
+};
+document.getElementById('ctCloseDeviceCode').onclick=()=>document.getElementById('ctDeviceCodePanel').style.display='none';
 document.getElementById('ctMakeInvite').onclick=async()=>{
  try{const d=await ctCallAccess({action:'create-invite'});document.getElementById('ctInviteCode').textContent=d.code;document.getElementById('ctInvitePanel').style.display='flex'}catch(e){toast(e.message)}
 };
