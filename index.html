@@ -71,23 +71,32 @@ select{padding-right:30px;background-position:right 12px center}
 .library-intro p{margin:0;color:var(--muted);font-size:16px;line-height:1.4}
 @media(max-width:700px){.library-intro{margin:30px 0 19px}.library-intro h1{font-size:clamp(25px,7vw,34px);letter-spacing:-.6px}.library-intro p{font-size:14px}}
 
+
+/* Icone personalizzate approvate */
+.icon-action.settings-icon,.icon-action.add-action{padding:0;border:0;background:transparent;box-shadow:none}
+.icon-action.settings-icon img,.icon-action.add-action img{display:block;width:48px;height:48px;object-fit:contain}
+.settings-item#exportBtn{display:flex}
+@media(max-width:700px){.icon-action.settings-icon img,.icon-action.add-action img{width:46px;height:46px}}
+@media(max-width:390px){.icon-action.settings-icon img,.icon-action.add-action img{width:42px;height:42px}}
+
 </style></head>
 <body><main class="app">
 <header class="top">
   <div class="brand"><img class="brand-logo" src="./icons/cinetrack-orizzontale.svg" alt="CineTrack"></div>
   <div class="top-actions">
-    <div class="settings-wrap"><button class="icon-action" id="settingsToggle" type="button" aria-label="Impostazioni" aria-expanded="false"><span class="settings-glyph">⚙</span></button>
+    <div class="settings-wrap"><button class="icon-action settings-icon" id="settingsToggle" type="button" aria-label="Impostazioni" aria-expanded="false"><img src="./icons/setting.svg" alt="">
+      </button>
       <div class="settings-menu hidden" id="settingsMenu">
         <div class="settings-menu-title">Impostazioni</div>
         <button class="settings-item" id="tmdbSettingsBtn" type="button">Collega TMDB</button>
         <button class="settings-item" id="importNetflixMenu" type="button">Importa Netflix</button>
         <button class="settings-item" id="recoverPostersMenu" type="button">Recupera locandine</button>
+        <button class="settings-item" id="exportBtn" type="button" aria-label="Backup archivio">Backup archivio</button>
         <div class="settings-divider"></div>
         <div id="ownerMenuActions"></div>
       </div>
     </div>
-    <button class="icon-action" id="exportBtn" type="button" aria-label="Esporta archivio"><span class="export-glyph">⇩</span></button>
-    <button class="icon-action add-action" id="addBtn" type="button" aria-label="Aggiungi"><span class="add-glyph">+</span></button>
+    <button class="icon-action add-action" id="addBtn" type="button" aria-label="Aggiungi"><img src="./icons/plus.svg" alt=""></button>
   </div>
 </header>
 <section class="library-intro"><h1>LA TUA LIBRERIA</h1><p>Tutto quello che hai visto, in un unico posto.</p></section>
