@@ -1,0 +1,20 @@
+CINETRACK – PACCHETTO PWA ANDROID
+
+Contenuto:
+- index.html: CineTrack v0.10.7 con supporto PWA
+- manifest.webmanifest: nome, icona e modalità standalone
+- sw.js: cache dell'applicazione e fallback offline della schermata
+- icons/: icone Android 192 e 512 px
+
+INSTALLAZIONE:
+1. Pubblicare TUTTO il contenuto di questa cartella su un hosting HTTPS.
+2. Aprire l'indirizzo HTTPS da Google Chrome su Android.
+3. Menu ⋮ > Installa app (oppure Aggiungi a schermata Home, a seconda della versione di Chrome).
+4. Avviare CineTrack dalla nuova icona.
+
+NOTE:
+- Non è un APK: è una PWA installata da Chrome.
+- I dati restano nel browser/app sul singolo telefono (localStorage); non sono sincronizzati con il PC.
+- TMDB e le sue API richiedono connessione Internet.
+- Il service worker mette in cache l'interfaccia; non rende offline le ricerche TMDB o l'importazione che richiede rete.
+- Per aggiornare l'app in futuro si pubblica una nuova versione dei file sullo stesso indirizzo HTTPS.
