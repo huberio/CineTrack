@@ -389,7 +389,7 @@ document.getElementById('deleteSelectedBtn').onclick=async()=>{
   if(window.CINETRACK_PREVIEW_MODE){localStorage.setItem(KEY,JSON.stringify(items));render()}else await saveAndSyncSnapshot();
   selectionMode=false;render();toast('Eliminati '+ids.length+' contenuti e sincronizzati.');
  }catch(error){
-  items=previousItems;localStorage.setItem(KEY,JSON.stringify(items));selectedItemIds.clear();selectionMode=true;render();
+  items=previousItems;localStorage.setItem(KEY,JSON.stringify(items));if(!window.CINETRACK_PREVIEW_MODE&&ctSyncReady){try{await ctSyncSnapshot(previousItems)}catch(rollbackError){console.error('Ripristino remoto dopo errore di eliminazione non riuscito',rollbackError)}}selectedItemIds.clear();selectionMode=true;render();
   console.error('Eliminazione multipla non sincronizzata',error);toast('Eliminazione non completata: la libreria precedente è stata ripristinata.');
  }finally{button.textContent='Elimina selezionati';button.disabled=selectedItemIds.size===0}
 };
