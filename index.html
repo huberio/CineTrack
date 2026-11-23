@@ -79,6 +79,15 @@ select{padding-right:30px;background-position:right 12px center}
 @media(max-width:700px){.icon-action.settings-icon img,.icon-action.add-action img{width:46px;height:46px}}
 @media(max-width:390px){.icon-action.settings-icon img,.icon-action.add-action img{width:42px;height:42px}}
 
+/* Selezione multipla della libreria */
+.bulk-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bulk-actions .btn{padding:8px 11px;font-size:12px}
+.bulk-actions .btn.danger{background:#3a2025;border-color:#754047;color:#ffc1c5}
+.bulk-actions .bulk-count{font-size:12px;color:var(--muted);white-space:nowrap}
+.card.selectable{position:relative}
+.card-select{position:absolute;z-index:3;top:9px;left:9px;width:25px;height:25px;margin:0;accent-color:var(--accent);cursor:pointer}
+.card.selected .poster{outline:3px solid var(--accent);outline-offset:2px}
+@media(max-width:700px){.section-head{align-items:flex-start;gap:9px;flex-wrap:wrap}.bulk-actions{width:100%}.bulk-actions .btn{flex:1}}
 </style></head>
 <body><main class="app">
 <header class="top">
@@ -106,7 +115,7 @@ select{padding-right:30px;background-position:right 12px center}
 <section class="stats"><div class="stat"><span>Contenuti in archivio</span><strong id="totalStat">0</strong></div><div class="stat"><span>Film</span><strong id="filmsStat">0</strong></div><div class="stat"><span>Serie TV</span><strong id="seriesStat">0</strong></div><div class="stat"><span>Titoli valutati</span><strong id="avgStat">0</strong></div></section>
 <div class="toolbar"><div class="search"><input id="search" placeholder="Cerca nella tua libreria…" autocomplete="off"></div><select id="platformFilter"><option value="">Tutte le piattaforme</option></select><select id="watcherFilter"><option value="">Chiunque</option><option value="Umb">Umb</option><option value="Lu">Lu</option><option value="both">Entrambi</option></select><select id="viewYearFilter"><option value="">Tutti gli anni di visione</option></select><select id="sort"><option value="recent">Aggiunti di recente</option><option value="az">Titolo A–Z</option><option value="rating">Voto più alto</option><option value="year">Anno di uscita</option><option value="viewRecent" selected>Visti più di recente</option><option value="viewOldest">Visti meno di recente</option></select></div>
 <nav class="tabs"><button class="tab active" data-filter="all">Tutti</button><button class="tab" data-filter="film">Film</button><button class="tab" data-filter="serie">Serie TV</button><button class="tab" data-filter="watching">In visione</button><button class="tab" data-filter="completed">Completati</button><button class="tab" data-filter="watchlist">Da guardare</button><button class="tab" data-filter="rated">Valutati</button></nav>
-<div class="section-head"><h3 id="listTitle">La tua collezione</h3><span id="countLabel">0 titoli</span></div><section class="grid" id="library"></section>
+<div class="section-head"><div><h3 id="listTitle">La tua collezione</h3><span id="countLabel">0 titoli</span></div><div class="bulk-actions"><button class="btn" id="selectionToggle" type="button">Seleziona</button><button class="btn hidden" id="selectVisibleBtn" type="button">Seleziona tutti</button><span class="bulk-count hidden" id="selectionCount">0 selezionati</span><button class="btn danger hidden" id="deleteSelectedBtn" type="button" disabled>Elimina selezionati</button></div></div><section class="grid" id="library"></section>
 <div class="footer">CINETRACK · VERSIONE 0.10.6 · I DATI RESTANO SU QUESTO DISPOSITIVO<br><br>Questo prodotto utilizza l’API di TMDB, ma non è approvato né certificato da TMDB. Dati e immagini: <a href="https://www.themoviedb.org" target="_blank" rel="noopener" style="color:var(--muted)">The Movie Database (TMDB)</a>.</div></main>
 <div class="modal-back hidden" id="restoreBackupModal"><div class="modal"><div class="modal-head"><h3>Ripristina un backup</h3><button class="x" data-close="restoreBackupModal" aria-label="Chiudi">×</button></div>
 <p style="color:var(--muted);font-size:13px;line-height:1.55">Seleziona un backup JSON esportato da CineTrack. Prima di procedere verrà scaricata una copia di sicurezza dell’archivio attuale. Il ripristino sostituisce la libreria attuale e la sincronizza con gli altri dispositivi.</p>
@@ -204,6 +213,7 @@ document.getElementById('tmdbSettingsBtn').classList.add('settings-item');
 
 const KEY=window.CINETRACK_PREVIEW_MODE?'cinetrack_restore_preview_items':'cinetrack_v04_clean_items',TMDB_KEY='cinetrack_v04_clean_tmdb_key';
 let items=load(),activeFilter='all',selectedDetail=null,pendingImport=[];
+let selectionMode=false,selectedItemIds=new Set(),visibleItemIds=[];
 const RATING_MIGRATION_KEY='cinetrack_rating_scale_v1';
 if(!localStorage.getItem(RATING_MIGRATION_KEY)){
   items=items.map(x=>({...x,rating:x.rating==null||x.rating===''?null:Math.max(0,Math.min(5,Number(x.rating)/2)),status:x.status==='paused'?'watchlist':x.status}));
@@ -346,13 +356,52 @@ if(sort==='year')arr.sort((a,b)=>(b.year||0)-(a.year||0));
 if(sort==='viewRecent')arr.sort((a,b)=>(b.lastWatched||b.watchDate||'').localeCompare(a.lastWatched||a.watchDate||''));
 if(sort==='viewOldest')arr.sort((a,b)=>(a.firstWatched||a.watchDate||'').localeCompare(b.firstWatched||b.watchDate||''));
 if(sort==='recent')arr.sort((a,b)=>b.created-a.created);
-document.getElementById('countLabel').textContent=arr.length+' '+(arr.length===1?'titolo':'titoli');
+visibleItemIds=arr.map(x=>String(x.id));
+ for(const id of [...selectedItemIds])if(!items.some(x=>String(x.id)===id))selectedItemIds.delete(id);
+ document.getElementById('countLabel').textContent=arr.length+' '+(arr.length===1?'titolo':'titoli');
+ document.getElementById('selectionToggle').textContent=selectionMode?'Annulla':'Seleziona';
+ document.getElementById('selectVisibleBtn').classList.toggle('hidden',!selectionMode||!arr.length);
+ document.getElementById('selectVisibleBtn').textContent=arr.length&&arr.every(x=>selectedItemIds.has(String(x.id)))?'Deseleziona tutti':'Seleziona tutti';
+ document.getElementById('selectionCount').classList.toggle('hidden',!selectionMode);
+ document.getElementById('selectionCount').textContent=selectedItemIds.size+' selezionati';
+ document.getElementById('deleteSelectedBtn').classList.toggle('hidden',!selectionMode);
+ document.getElementById('deleteSelectedBtn').disabled=selectedItemIds.size===0;
 document.getElementById('listTitle').textContent=({all:'La tua collezione',film:'I tuoi film',serie:'Le tue serie TV',watching:'In visione',completed:'Completati',watchlist:'Da guardare',rated:'Titoli valutati'})[activeFilter];
 let root=document.getElementById('library');
 if(!arr.length){root.innerHTML=`<div class="empty"><b>${items.length?'Nessun risultato':'La tua libreria è ancora vuota'}</b>${items.length?'Prova a cambiare i filtri o la ricerca.':'Aggiungi il primo film o la prima serie TV per iniziare a costruire il tuo archivio.'}<br><br><button class="btn primary" onclick="openForm()">＋ Aggiungi il primo contenuto</button></div>`;return}
-root.innerHTML=arr.map(x=>{let last=x.lastWatched||x.watchDate||'',viewLabel=last?`Visto ${last.slice(0,4)}`:(x.watchYears?.length?`Visto ${x.watchYears.join(', ')}`:'');return `<article class="card ${x.type==='film'?'film':'serie'}" data-id="${x.id}"><div class="poster">${x.poster?`<img src="${esc(x.poster)}" alt="" onerror="this.remove()">`:''}<span class="placeholder">${esc(x.title)}</span><span class="type-pill">${x.type==='film'?'FILM':'SERIE TV'}</span><span class="status-pill ${esc(x.status||'watchlist')}">${esc(statusName(x.status))}</span><span class="watcher-pill ${normalizeWatchers(x).length===2?'watcher-both':normalizeWatchers(x)[0]==='Umb'?'watcher-umb':'watcher-lu'}">${esc(watcherLabel(x))}</span></div><h4 title="${esc(x.title)}">${esc(x.title)}</h4><div class="meta"><span>${esc(x.year||'Anno n.d.')} · ${esc(viewLabel||'Visione n.d.')}</span><span class="rating-mark">${x.rating?reactionIcon(x.rating):''}</span></div></article>`}).join('');
-root.querySelectorAll('.card').forEach(c=>c.addEventListener('click',()=>showDetail(c.dataset.id)))
+root.innerHTML=arr.map(x=>{let id=String(x.id),selected=selectedItemIds.has(id),last=x.lastWatched||x.watchDate||'',viewLabel=last?`Visto ${last.slice(0,4)}`:(x.watchYears?.length?`Visto ${x.watchYears.join(', ')}`:'');return `<article class="card ${x.type==='film'?'film':'serie'} ${selectionMode?'selectable':''} ${selected?'selected':''}" data-id="${esc(id)}"><div class="poster">${selectionMode?`<input class="card-select" type="checkbox" aria-label="Seleziona ${esc(x.title)}" ${selected?'checked':''}>`:''}${x.poster?`<img src="${esc(x.poster)}" alt="" onerror="this.remove()">`:''}<span class="placeholder">${esc(x.title)}</span><span class="type-pill">${x.type==='film'?'FILM':'SERIE TV'}</span><span class="status-pill ${esc(x.status||'watchlist')}">${esc(statusName(x.status))}</span><span class="watcher-pill ${normalizeWatchers(x).length===2?'watcher-both':normalizeWatchers(x)[0]==='Umb'?'watcher-umb':'watcher-lu'}">${esc(watcherLabel(x))}</span></div><h4 title="${esc(x.title)}">${esc(x.title)}</h4><div class="meta"><span>${esc(x.year||'Anno n.d.')} · ${esc(viewLabel||'Visione n.d.')}</span><span class="rating-mark">${x.rating?reactionIcon(x.rating):''}</span></div></article>`}).join('');
+ root.querySelectorAll('.card').forEach(c=>{
+  const toggle=()=>{const id=String(c.dataset.id);if(selectedItemIds.has(id))selectedItemIds.delete(id);else selectedItemIds.add(id);render()};
+  c.addEventListener('click',e=>{if(selectionMode){e.preventDefault();toggle()}else showDetail(c.dataset.id)});
+  const check=c.querySelector('.card-select');if(check)check.addEventListener('click',e=>{e.stopPropagation();toggle()});
+ });
 }
+document.getElementById('selectionToggle').onclick=()=>{selectionMode=!selectionMode;selectedItemIds.clear();render()};
+document.getElementById('selectVisibleBtn').onclick=()=>{
+ const allSelected=visibleItemIds.length>0&&visibleItemIds.every(id=>selectedItemIds.has(id));
+ if(allSelected)visibleItemIds.forEach(id=>selectedItemIds.delete(id));else visibleItemIds.forEach(id=>selectedItemIds.add(id));
+ render();
+};
+document.getElementById('deleteSelectedBtn').onclick=async()=>{
+ const ids=[...selectedItemIds].filter(id=>items.some(x=>String(x.id)===id));
+ if(!ids.length)return;
+ if(!window.CINETRACK_PREVIEW_MODE&&!ctSyncReady){toast('Sincronizzazione non pronta: riprova tra qualche secondo.');return}
+ const names=items.filter(x=>ids.includes(String(x.id))).slice(0,4).map(x=>x.title);
+ const extra=ids.length>4?' e altri '+(ids.length-4):'';
+ if(!confirm('Vuoi eliminare definitivamente '+ids.length+' contenuti dalla libreria condivisa?\\n\\n'+names.join(', ')+extra+'\\n\\nL’eliminazione sarà applicata anche agli altri dispositivi.'))return;
+ const button=document.getElementById('deleteSelectedBtn'),previousItems=items.map(x=>({...x}));
+ button.disabled=true;button.textContent='Eliminazione…';
+ try{
+  clearTimeout(ctSaveTimer);items=items.filter(x=>!ids.includes(String(x.id)));selectedItemIds.clear();
+  if(window.CINETRACK_PREVIEW_MODE){localStorage.setItem(KEY,JSON.stringify(items));render()}else await saveAndSyncSnapshot();
+  selectionMode=false;render();toast('Eliminati '+ids.length+' contenuti e sincronizzati.');
+ }catch(error){
+  items=previousItems;localStorage.setItem(KEY,JSON.stringify(items));
+  if(!window.CINETRACK_PREVIEW_MODE&&ctSyncReady){try{await ctSyncSnapshot(previousItems)}catch(rollbackError){console.error('Ripristino remoto dopo errore di eliminazione non riuscito',rollbackError)}}
+  selectedItemIds.clear();selectionMode=true;render();
+  console.error('Eliminazione multipla non sincronizzata',error);toast('Eliminazione non completata: la libreria precedente è stata ripristinata.');
+ }finally{button.textContent='Elimina selezionati';button.disabled=selectedItemIds.size===0}
+};
 function openForm(id=null){window.currentTMDBData=null;let x=items.find(i=>i.id===id);document.getElementById('tmdbResults').innerHTML='';document.getElementById('tmdbSearch').value='';tmdbSearchKind='all';document.querySelectorAll('.kind-btn').forEach(b=>b.classList.toggle('active',b.dataset.kind==='all'));document.getElementById('itemForm').reset();document.getElementById('itemId').value=x?.id||'';document.getElementById('formTitle').textContent=x?'Modifica contenuto':'Aggiungi un contenuto';document.getElementById('deleteBtn').classList.toggle('hidden',!x);for(let k of ['title','type','year','watchDate','status','rating','platform','poster','notes'])document.getElementById(k).value=x?.[k]??({type:'film',status:'completed'}[k]||'');document.getElementById('watchedBy').value=x?watcherValue(x):'Umb';document.getElementById('editModal').classList.remove('hidden')}
 document.getElementById('addBtn').onclick=()=>openForm();document.getElementById('itemForm').onsubmit=e=>{e.preventDefault();let id=document.getElementById('itemId').value,x=items.find(i=>i.id===id),obj={...(x||{}),id:id||uid(),title:document.getElementById('title').value.trim(),type:document.getElementById('type').value,year:Number(document.getElementById('year').value)||null,watchDate:document.getElementById('watchDate').value||x?.watchDate||null,lastWatched:document.getElementById('watchDate').value||x?.lastWatched||null,firstWatched:x?.firstWatched||document.getElementById('watchDate').value||null,watchYears:x?.watchYears||((document.getElementById('watchDate').value)?[document.getElementById('watchDate').value.slice(0,4)]:[]),status:document.getElementById('status').value,watchedBy:document.getElementById('watchedBy').value==='both'?['Umb','Lu']:[document.getElementById('watchedBy').value],rating:document.getElementById('rating').value||null,platform:document.getElementById('platform').value.trim(),poster:document.getElementById('poster').value.trim(),notes:document.getElementById('notes').value.trim(),created:x?.created||Date.now()};if(x)items=items.map(i=>i.id===id?obj:i);else items.push(obj);document.getElementById('editModal').classList.add('hidden');save();toast(x?'Contenuto aggiornato':'Aggiunto alla libreria')};document.getElementById('deleteBtn').onclick=()=>{let id=document.getElementById('itemId').value;if(confirm('Vuoi eliminare questo contenuto dalla libreria?')){items=items.filter(x=>x.id!==id);document.getElementById('editModal').classList.add('hidden');save();toast('Contenuto eliminato')}};
 function setItemRating(id,rating){
