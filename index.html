@@ -545,11 +545,20 @@ document.getElementById('analyzeRatings').onclick=async()=>{
     let titleIdx=headers.findIndex(h=>['title','titolo','title name'].includes(h));
     let ratingIdx=headers.findIndex(h=>['rating','your rating','valutazione','thumbs value','star value'].includes(h));
     if(titleIdx<0||ratingIdx<0)throw new Error('Non riconosco le colonne del CSV. Servono Title/Rating oppure Title Name/Thumbs Value (formato Netflix).');
-    pendingRatings=rows.map(r=>({title:(r[titleIdx]||'').trim(),rating:normalizeNetflixRating(r[ratingIdx])})).filter(r=>r.title&&r.rating);
+    let grouped=new Map();
+    for(let row of rows){
+      let title=(row[titleIdx]||'').trim(),rating=normalizeNetflixRating(row[ratingIdx]);
+      if(!title||!rating)continue;
+      let key=normTitle(title),entry=grouped.get(key)||{title,rating,conflict:false};
+      if(entry.rating!==rating)entry.conflict=true;
+      grouped.set(key,entry);
+    }
+    pendingRatings=[...grouped.values()].filter(r=>!r.conflict);
+    let conflicts=[...grouped.values()].filter(r=>r.conflict).map(r=>r.title);
     let matched=0,unmatched=[];
     for(let r of pendingRatings){if(items.some(i=>normTitle(i.title)===normTitle(r.title)))matched++;else unmatched.push(r.title);}
     let root=document.getElementById('ratingsImportPreview');
-    root.innerHTML=`<p><b>${pendingRatings.length}</b> valutazioni riconosciute · <b>${matched}</b> titoli già presenti · <b>${unmatched.length}</b> non abbinati.</p>${unmatched.length?`<details><summary>Non abbinati</summary><ul>${unmatched.slice(0,30).map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details>`:''}<p class="notice">Le valutazioni vengono applicate solo ai titoli già presenti nella libreria. Nessuna scheda viene creata o eliminata.</p>`;
+    root.innerHTML=`<p><b>${grouped.size}</b> titoli valutati · <b>${matched}</b> titoli già presenti · <b>${unmatched.length}</b> non abbinati · <b>${conflicts.length}</b> con valutazioni discordanti.</p>${unmatched.length?`<details><summary>Non abbinati</summary><ul>${unmatched.slice(0,30).map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details>`:''}${conflicts.length?`<details><summary>Valutazioni discordanti (non applicate)</summary><ul>${conflicts.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details>`:''}<p class="notice">Le valutazioni discordanti tra profili vengono escluse per non sovrascrivere arbitrariamente la reazione condivisa. Si applicano solo valutazioni univoche a titoli già presenti. Nessuna scheda viene creata o eliminata.</p>`;
     root.classList.remove('hidden');
     document.getElementById('ratingsImportResult').textContent='Controlla il riepilogo prima di applicare le valutazioni.';
     document.getElementById('confirmRatingsImport').disabled=!matched;
