@@ -543,7 +543,8 @@ document.getElementById('analyzeRatings').onclick=async()=>{
     let rows=parseCSV(await file.text());
     let headers=(rows.shift()||[]).map(x=>x.replace(/^\uFEFF/,'').trim().toLowerCase());
     let titleIdx=headers.findIndex(h=>['title','titolo','title name'].includes(h));
-    let ratingIdx=headers.findIndex(h=>['rating','your rating','valutazione','thumbs value','star value'].includes(h));
+    let ratingIdx=headers.findIndex(h=>['rating','your rating','valutazione','thumbs value'].includes(h));
+    if(ratingIdx<0)ratingIdx=headers.findIndex(h=>h==='star value');
     if(titleIdx<0||ratingIdx<0)throw new Error('Non riconosco le colonne del CSV. Servono Title/Rating oppure Title Name/Thumbs Value (formato Netflix).');
     let grouped=new Map();
     for(let row of rows){
