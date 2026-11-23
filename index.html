@@ -94,6 +94,7 @@ select{padding-right:30px;background-position:right 12px center}
         <button class="settings-item" id="recoverPostersMenu" type="button">Recupera locandine</button>
         <button class="settings-item" id="exportBtn" type="button" aria-label="Backup archivio">Backup archivio</button>
         <button class="settings-item" id="restoreBackupMenu" type="button">Ripristina backup JSON</button>
+        <button class="settings-item" id="clearLibraryMenu" type="button">Svuota completamente la libreria</button>
         <div class="settings-divider"></div>
         <div id="ownerMenuActions"></div>
       </div>
@@ -114,6 +115,7 @@ select{padding-right:30px;background-position:right 12px center}
 <p id="restoreBackupError" style="display:none;color:#ff8d8d;font-size:12px;margin-top:10px"></p>
 <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button class="btn" type="button" data-close="restoreBackupModal">Annulla</button><button class="btn primary" type="button" id="restoreBackupConfirm" disabled>Ripristina libreria</button></div>
 </div></div>
+<div class="modal-back hidden" id="clearLibraryModal"><div class="modal"><div class="modal-head"><h3>Svuota completamente la libreria</h3><button class="x" data-close="clearLibraryModal" aria-label="Chiudi">×</button></div><p style="color:var(--muted);font-size:13px;line-height:1.55">Questa operazione elimina tutti i film e le serie dalla libreria condivisa e da tutti i dispositivi collegati. Prima verrà scaricato automaticamente un backup JSON di sicurezza. L'operazione non può essere annullata automaticamente.</p><div id="clearLibraryCount" class="notice"></div><div class="field" style="margin-top:12px"><label for="clearLibraryPhrase">Per confermare, scrivi SVUOTA</label><input id="clearLibraryPhrase" autocomplete="off" placeholder="Scrivi SVUOTA"></div><p id="clearLibraryError" style="display:none;color:#ff8d8d;font-size:12px;margin-top:10px"></p><div class="modal-actions"><button class="btn" type="button" data-close="clearLibraryModal">Annulla</button><button class="btn primary" type="button" id="clearLibraryConfirm" disabled>Svuota libreria</button></div></div></div>
 <div class="modal-back hidden" id="editModal"><div class="modal"><div class="modal-head"><h3 id="formTitle">Aggiungi un contenuto</h3><button class="x" data-close="editModal">×</button></div><form id="itemForm"><input type="hidden" id="itemId"><div class="form-grid">
 <div class="field full"><label>Ricerca automatica (titolo italiano)</label><div class="search-kind" id="searchKind"><button type="button" class="kind-btn active" data-kind="all">Tutti</button><button type="button" class="kind-btn" data-kind="movie">Film</button><button type="button" class="kind-btn" data-kind="tv">Serie</button></div><div class="tmdb-bar" style="margin-top:9px"><input id="tmdbSearch" placeholder="Es. La casa di carta"><button type="button" class="btn" id="tmdbSearchBtn">Cerca</button></div><div id="tmdbResults" class="tmdb-results"></div></div><div class="field"><label for="title">Titolo *</label><input id="title" required placeholder="Titolo in italiano"></div><div class="field"><label for="type">Tipo *</label><select id="type"><option value="film">Film</option><option value="serie">Serie TV</option></select></div>
 <div class="field"><label for="year">Anno di uscita</label><input id="year" type="number" min="1888" max="2100" placeholder="2026"></div><div class="field"><label for="watchDate">Data di visione (facoltativa)</label><input id="watchDate" type="date"></div><div class="field"><label for="watchedBy">Chi l'ha guardato?</label><select id="watchedBy"><option value="Umb">Umb</option><option value="Lu">Lu</option><option value="both">Entrambi</option></select></div><div class="field"><label for="status">Stato</label><select id="status"><option value="completed">Completato</option><option value="watching">In visione</option><option value="watchlist">Da guardare</option><option value="abandoned">Abbandonato</option></select></div>
@@ -226,6 +228,22 @@ setTimeout(()=>{
  if(label) label.style.display='block';
 },2000);
 function save(){localStorage.setItem(KEY,JSON.stringify(items));render();if(ctSyncReady&&!ctApplyingRemote){clearTimeout(ctSaveTimer);ctSaveTimer=setTimeout(ctPushChanges,250)}}
+async function ctSyncSnapshot(nextItems){
+ if(!ctSyncReady||!ctClient||!ctUser)throw new Error('Sincronizzazione non disponibile: accedi e riprova.');
+ const nextIds=new Set(nextItems.map(x=>String(x.id)));
+ for(let i=0;i<nextItems.length;i+=100){
+  const rows=nextItems.slice(i,i+100).map(x=>({id:String(x.id),payload:x,updated_by:ctUser.id}));
+  const {error}=await ctClient.from('cinetrack_items').upsert(rows,{onConflict:'id'});
+  if(error)throw error;
+ }
+ const removed=[...ctKnownIds].filter(id=>!nextIds.has(id));
+ for(let i=0;i<removed.length;i+=100){
+  const {error}=await ctClient.from('cinetrack_items').delete().in('id',removed.slice(i,i+100));
+  if(error)throw error;
+ }
+ ctKnownIds=nextIds;
+}
+async function saveAndSyncSnapshot(){localStorage.setItem(KEY,JSON.stringify(items));render();if(ctSyncReady)await ctSyncSnapshot(items)}
 async function ctPushChanges(){
  if(!ctSyncReady||!ctClient||ctApplyingRemote)return;
  const current=new Set(items.map(x=>String(x.id)));
@@ -394,15 +412,7 @@ document.getElementById('restoreBackupConfirm').onclick=async()=>{
  try{
   if(ctSyncReady&&ctClient&&ctUser){
    ctApplyingRemote=true;
-   const rows=nextItems.map(x=>({id:String(x.id),payload:x,updated_by:ctUser.id}));
-   const {error:upsertError}=await ctClient.from('cinetrack_items').upsert(rows,{onConflict:'id'});
-   if(upsertError)throw upsertError;
-   const removed=[...previousIds].filter(id=>!nextIds.has(id));
-   if(removed.length){
-    const {error:deleteError}=await ctClient.from('cinetrack_items').delete().in('id',removed);
-    if(deleteError)throw deleteError;
-   }
-   ctKnownIds=nextIds;
+   await ctSyncSnapshot(nextItems);
   }
   items=nextItems;
   localStorage.setItem(KEY,JSON.stringify(items));render();
@@ -433,6 +443,30 @@ document.getElementById('restoreBackupConfirm').onclick=async()=>{
  }
 };
 
+
+document.getElementById('clearLibraryMenu').onclick=()=>{
+ document.getElementById('settingsMenu').classList.add('hidden');
+ document.getElementById('clearLibraryCount').textContent='Schede attualmente presenti: '+items.length+'. Verrà creato un backup automatico prima della cancellazione.';
+ document.getElementById('clearLibraryPhrase').value='';document.getElementById('clearLibraryError').style.display='none';document.getElementById('clearLibraryConfirm').disabled=true;document.getElementById('clearLibraryModal').classList.remove('hidden');
+};
+document.getElementById('clearLibraryPhrase').addEventListener('input',e=>{document.getElementById('clearLibraryConfirm').disabled=e.target.value.trim()!=='SVUOTA'});
+document.getElementById('clearLibraryConfirm').onclick=async()=>{
+ const btn=document.getElementById('clearLibraryConfirm'),error=document.getElementById('clearLibraryError');
+ if(document.getElementById('clearLibraryPhrase').value.trim()!=='SVUOTA')return;
+ if(!confirm('Confermi definitivamente? Tutta la libreria verrà eliminata anche per Lu e sugli altri dispositivi.'))return;
+ btn.disabled=true;btn.textContent='Backup e cancellazione…';error.style.display='none';
+ const previousItems=items.map(x=>({...x}));
+ try{
+  downloadCineTrackBackup(previousItems,'cinetrack-backup-prima-di-svuotare.json');
+  if(ctSyncReady){
+   ctApplyingRemote=true;const ids=[...ctKnownIds];
+   for(let i=0;i<ids.length;i+=100){const {error:deleteError}=await ctClient.from('cinetrack_items').delete().in('id',ids.slice(i,i+100));if(deleteError)throw deleteError}
+   ctKnownIds.clear();
+  }else if(!window.CINETRACK_PREVIEW_MODE)throw new Error('La sincronizzazione non è pronta. Nessun dato è stato cancellato.');
+  items=[];localStorage.setItem(KEY,'[]');render();document.getElementById('clearLibraryModal').classList.add('hidden');document.getElementById('clearLibraryPhrase').value='';toast('Libreria svuotata. Backup di sicurezza scaricato.');
+ }catch(err){console.error('Svuotamento libreria non riuscito',err);error.textContent='Non sono riuscito a completare la cancellazione. La libreria locale è stata mantenuta. Dettaglio: '+(err.message||'errore sconosciuto');error.style.display='block'}
+ finally{ctApplyingRemote=false;btn.disabled=document.getElementById('clearLibraryPhrase').value.trim()!=='SVUOTA';btn.textContent='Svuota libreria'}
+};
 
 // Importazione Netflix v0.4: raggruppa episodi, verifica le serie su TMDB e separa i casi dubbi.
 let netflixRows=[],netflixPreview=null;
@@ -556,7 +590,8 @@ document.getElementById('analyzePrime').onclick=async()=>{
  finally{button.disabled=false;button.textContent='Analizza cronologia'}
 };
 document.getElementById('confirmPrimeImport').onclick=async()=>{
- if(!primePreview)return;let added=0,merged=0,owner=primePreview.owner;
+ if(!primePreview)return;const previousItems=items.map(x=>({...x}));let added=0,merged=0,owner=primePreview.owner;
+ const primeConfirm=document.getElementById('confirmPrimeImport');primeConfirm.disabled=true;primeConfirm.textContent='Salvataggio e sincronizzazione…';
  for(let f of primePreview.films){
   let existing=primeExisting(f.title,'film');
   if(existing){primeMergeDates(existing,f.dates,owner);if(!existing.platform)existing.platform='Prime Video';merged++;continue}
@@ -569,7 +604,8 @@ document.getElementById('confirmPrimeImport').onclick=async()=>{
   let seasons=g.seasons.map(s=>({season_number:s.season_number,name:'Stagione '+s.season_number,episode_count:null,air_date:null,poster_path:null,watchStatus:'watching'}));
   items.push({id:uid(),title:meta?.name||g.title,type:'serie',year:Number((meta?.first_air_date||'').slice(0,4))||null,status:'watching',rating:null,platform:'Prime Video',poster:meta?.poster_path?TMDB_IMG+meta.poster_path:'',tmdbId:meta?.id||g.tmdbId||null,originalTitle:meta?.original_name||'',overview:meta?.overview||'',tmdbStatus:meta?.status||'',seasons,watchDates:dates,watchYears:[...new Set(dates.map(d=>d.slice(0,4)))].sort(),firstWatched:dates[0]||null,lastWatched:dates[dates.length-1]||null,watchDate:dates[dates.length-1]||null,notes:'Importato dalla cronologia Prime Video: '+g.episodes+' episodi distinti riconosciuti. Lo stato resta “In visione”: la cronologia non dimostra che la serie sia stata completata.',watchedBy:[owner],created:Date.now()});added++;
  }
- save();primePreview=null;document.getElementById('primeImportModal').classList.add('hidden');document.getElementById('primeCsvFile').value='';document.getElementById('primeImportOwner').value='';document.getElementById('analyzePrime').disabled=true;document.getElementById('primeImportPreview').innerHTML='';document.getElementById('primeImportPreview').classList.add('hidden');document.getElementById('confirmPrimeImport').disabled=true;toast('Importati '+added+' contenuti; aggiornati '+merged+' già presenti.');
+ try{await saveAndSyncSnapshot()}catch(syncError){items=previousItems;localStorage.setItem(KEY,JSON.stringify(items));render();console.error('Import Prime Video non sincronizzato',syncError);document.getElementById('primeImportResult').textContent='Importazione non completata: la sincronizzazione non è riuscita. La libreria precedente è stata mantenuta. Dettaglio: '+(syncError.message||'errore sconosciuto');primeConfirm.disabled=false;primeConfirm.textContent='Riprova importazione';return}
+ primePreview=null;document.getElementById('primeImportModal').classList.add('hidden');document.getElementById('primeCsvFile').value='';document.getElementById('primeImportOwner').value='';document.getElementById('analyzePrime').disabled=true;document.getElementById('primeImportPreview').innerHTML='';document.getElementById('primeImportPreview').classList.add('hidden');document.getElementById('confirmPrimeImport').disabled=true;primeConfirm.disabled=false;primeConfirm.textContent='Importa contenuti riconosciuti';toast('Importati '+added+' contenuti; aggiornati '+merged+' già presenti e sincronizzati.');
 };
 document.getElementById('importPrimeMenu').onclick=()=>{document.getElementById('primeImportModal').classList.remove('hidden');closeSettingsMenu()};
 
