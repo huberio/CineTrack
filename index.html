@@ -181,6 +181,7 @@ select{padding-right:30px;background-position:right 12px center}
 </div>
 
 <div id="toast" class="toast hidden"></div>
+<script>window.CINETRACK_PREVIEW_MODE=true;</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase-config.js"></script>
 <script>
@@ -195,7 +196,7 @@ const ownerMenuActions=document.getElementById('ownerMenuActions');
 ownerMenuActions.append(document.getElementById('ctMakeInvite'),document.getElementById('ctMakeDeviceCode'));
 document.getElementById('tmdbSettingsBtn').classList.add('settings-item');
 
-const KEY='cinetrack_v04_clean_items',TMDB_KEY='cinetrack_v04_clean_tmdb_key';
+const KEY=window.CINETRACK_PREVIEW_MODE?'cinetrack_restore_preview_items':'cinetrack_v04_clean_items',TMDB_KEY='cinetrack_v04_clean_tmdb_key';
 let items=load(),activeFilter='all',selectedDetail=null,pendingImport=[];
 const RATING_MIGRATION_KEY='cinetrack_rating_scale_v1';
 if(!localStorage.getItem(RATING_MIGRATION_KEY)){
@@ -569,11 +570,17 @@ document.getElementById('ctMakeInvite').onclick=async()=>{
 };
 document.getElementById('ctCopyInvite').onclick=()=>navigator.clipboard.writeText(document.getElementById('ctInviteCode').textContent).then(()=>toast('Codice copiato'));
 document.getElementById('ctCloseInvite').onclick=()=>document.getElementById('ctInvitePanel').style.display='none';
-ctBoot();
+if(window.CINETRACK_PREVIEW_MODE){
+ document.getElementById('ctAuthGate').style.display='none';
+ document.getElementById('ctAuthLoading').style.display='none';
+ document.getElementById('ctAuthPanel').style.display='none';
+ const previewNotice=document.createElement('div');previewNotice.textContent='AMBIENTE DI PROVA · DATI LOCALI · NESSUNA SINCRONIZZAZIONE';previewNotice.style.cssText='position:sticky;top:0;z-index:100000;background:#8b5cf6;color:white;text-align:center;padding:8px 12px;font-size:11px;font-weight:800;letter-spacing:.06em';document.body.prepend(previewNotice);
+ render();
+}else{ctBoot();}
 
 </script>
 <script>
-if ('serviceWorker' in navigator) {
+if (!window.CINETRACK_PREVIEW_MODE && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker non registrato:', err));
   });
