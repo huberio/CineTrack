@@ -92,6 +92,7 @@ select{padding-right:30px;background-position:right 12px center}
         <button class="settings-item" id="importNetflixMenu" type="button">Importa Netflix</button>
         <button class="settings-item" id="recoverPostersMenu" type="button">Recupera locandine</button>
         <button class="settings-item" id="exportBtn" type="button" aria-label="Backup archivio">Backup archivio</button>
+        <button class="settings-item" id="restoreBackupMenu" type="button">Ripristina backup JSON</button>
         <div class="settings-divider"></div>
         <div id="ownerMenuActions"></div>
       </div>
@@ -105,6 +106,13 @@ select{padding-right:30px;background-position:right 12px center}
 <nav class="tabs"><button class="tab active" data-filter="all">Tutti</button><button class="tab" data-filter="film">Film</button><button class="tab" data-filter="serie">Serie TV</button><button class="tab" data-filter="watching">In visione</button><button class="tab" data-filter="completed">Completati</button><button class="tab" data-filter="watchlist">Da guardare</button><button class="tab" data-filter="rated">Valutati</button></nav>
 <div class="section-head"><h3 id="listTitle">La tua collezione</h3><span id="countLabel">0 titoli</span></div><section class="grid" id="library"></section>
 <div class="footer">CINETRACK · VERSIONE 0.10.6 · I DATI RESTANO SU QUESTO DISPOSITIVO<br><br>Questo prodotto utilizza l’API di TMDB, ma non è approvato né certificato da TMDB. Dati e immagini: <a href="https://www.themoviedb.org" target="_blank" rel="noopener" style="color:var(--muted)">The Movie Database (TMDB)</a>.</div></main>
+<div class="modal-back hidden" id="restoreBackupModal"><div class="modal"><div class="modal-head"><h3>Ripristina un backup</h3><button class="x" data-close="restoreBackupModal" aria-label="Chiudi">×</button></div>
+<p style="color:var(--muted);font-size:13px;line-height:1.55">Seleziona un backup JSON esportato da CineTrack. Prima di procedere verrà scaricata una copia di sicurezza dell’archivio attuale. Il ripristino sostituisce la libreria attuale e la sincronizza con gli altri dispositivi.</p>
+<div class="import-box"><b>Seleziona il backup CineTrack (.json)</b><br><input type="file" id="restoreBackupFile" accept=".json,application/json"></div>
+<div id="restoreBackupPreview" style="display:none;margin-top:14px;padding:13px;border:1px solid var(--line);border-radius:10px;font-size:13px;line-height:1.6"></div>
+<p id="restoreBackupError" style="display:none;color:#ff8d8d;font-size:12px;margin-top:10px"></p>
+<div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button class="btn" type="button" data-close="restoreBackupModal">Annulla</button><button class="btn primary" type="button" id="restoreBackupConfirm" disabled>Ripristina libreria</button></div>
+</div></div>
 <div class="modal-back hidden" id="editModal"><div class="modal"><div class="modal-head"><h3 id="formTitle">Aggiungi un contenuto</h3><button class="x" data-close="editModal">×</button></div><form id="itemForm"><input type="hidden" id="itemId"><div class="form-grid">
 <div class="field full"><label>Ricerca automatica (titolo italiano)</label><div class="search-kind" id="searchKind"><button type="button" class="kind-btn active" data-kind="all">Tutti</button><button type="button" class="kind-btn" data-kind="movie">Film</button><button type="button" class="kind-btn" data-kind="tv">Serie</button></div><div class="tmdb-bar" style="margin-top:9px"><input id="tmdbSearch" placeholder="Es. La casa di carta"><button type="button" class="btn" id="tmdbSearchBtn">Cerca</button></div><div id="tmdbResults" class="tmdb-results"></div></div><div class="field"><label for="title">Titolo *</label><input id="title" required placeholder="Titolo in italiano"></div><div class="field"><label for="type">Tipo *</label><select id="type"><option value="film">Film</option><option value="serie">Serie TV</option></select></div>
 <div class="field"><label for="year">Anno di uscita</label><input id="year" type="number" min="1888" max="2100" placeholder="2026"></div><div class="field"><label for="watchDate">Data di visione (facoltativa)</label><input id="watchDate" type="date"></div><div class="field"><label for="watchedBy">Chi l'ha guardato?</label><select id="watchedBy"><option value="Umb">Umb</option><option value="Lu">Lu</option><option value="both">Entrambi</option></select></div><div class="field"><label for="status">Stato</label><select id="status"><option value="completed">Completato</option><option value="watching">In visione</option><option value="watchlist">Da guardare</option><option value="abandoned">Abbandonato</option></select></div>
@@ -173,6 +181,7 @@ select{padding-right:30px;background-position:right 12px center}
 </div>
 
 <div id="toast" class="toast hidden"></div>
+<script>window.CINETRACK_PREVIEW_MODE=window.location.hostname==='raw.githack.com';</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase-config.js"></script>
 <script>
@@ -187,7 +196,7 @@ const ownerMenuActions=document.getElementById('ownerMenuActions');
 ownerMenuActions.append(document.getElementById('ctMakeInvite'),document.getElementById('ctMakeDeviceCode'));
 document.getElementById('tmdbSettingsBtn').classList.add('settings-item');
 
-const KEY='cinetrack_v04_clean_items',TMDB_KEY='cinetrack_v04_clean_tmdb_key';
+const KEY=window.CINETRACK_PREVIEW_MODE?'cinetrack_restore_preview_items':'cinetrack_v04_clean_items',TMDB_KEY='cinetrack_v04_clean_tmdb_key';
 let items=load(),activeFilter='all',selectedDetail=null,pendingImport=[];
 const RATING_MIGRATION_KEY='cinetrack_rating_scale_v1';
 if(!localStorage.getItem(RATING_MIGRATION_KEY)){
@@ -234,7 +243,7 @@ async function ctApplyRemote(){
 }
 function ctSubscribe(){
  ctClient.channel('cinetrack-live-items').on('postgres_changes',{event:'*',schema:'public',table:'cinetrack_items'},async payload=>{
-  if(!ctSyncReady)return;
+  if(!ctSyncReady||ctApplyingRemote)return;
   const id=String((payload.new&&payload.new.id)||(payload.old&&payload.old.id)||'');
   ctApplyingRemote=true;
   if(payload.eventType==='DELETE'){items=items.filter(x=>String(x.id)!==id);ctKnownIds.delete(id)}
@@ -334,6 +343,92 @@ function setItemStatus(id,status){let x=items.find(i=>i.id===id);if(!x)return;x.
 function showDetail(id){let x=items.find(i=>i.id===id);if(!x)return;selectedDetail=id;let seasonHtml='';if(x.type==='serie'){let seasons=(x.seasons||[]).filter(s=>Number(s.season_number)>0);let seasonDone=seasons.filter(s=>s.watchStatus==='completed').length;seasonHtml=`<div style="margin-top:20px"><div class="section-head"><h3>Stagioni</h3><span>${seasons.length?`${seasonDone}/${seasons.length} completate`:'Dati non disponibili'}</span></div>${seasons.length?`<div class="season-list">${seasons.map(s=>`<div class="season-item"><span><b>${esc(s.name||('Stagione '+s.season_number))}</b><br><small>${s.air_date?esc(s.air_date.slice(0,4)):'Anno n.d.'} · ${Number(s.episode_count)||0} episodi</small></span><div class="season-controls"><select aria-label="Stato ${esc(s.name||('Stagione '+s.season_number))}" onchange="setSeasonStatus('${x.id}',${Number(s.season_number)},this.value)"><option value="watchlist" ${(!s.watchStatus||s.watchStatus==='watchlist')?'selected':''}>Da vedere</option><option value="watching" ${s.watchStatus==='watching'?'selected':''}>In visione</option><option value="completed" ${s.watchStatus==='completed'?'selected':''}>Completata</option></select></div></div>`).join('')}</div>`:'<p class="notice">Collega TMDB e aggiorna i dati per conoscere il numero delle stagioni.</p>'}<button class="btn" style="margin-top:10px" onclick="refreshSeries('${x.id}')">↻ Aggiorna stagioni da TMDB</button><p class="season-progress">Lo stato delle singole stagioni è indipendente dallo stato generale della serie.</p></div>`;}document.getElementById('detailBody').innerHTML=`<div class="detail-top"><img class="detail-poster" src="${esc(x.poster||'')}" onerror="this.style.display='none'"><div class="detail-copy"><div class="eyebrow">${x.type==='film'?'Film':'Serie TV'} · ${esc(x.year||'Anno non indicato')}</div><h2>${esc(x.title)}</h2><div class="detail-status"><label for="detailWatchers">Visto da</label><select id="detailWatchers" onchange="setItemWatchers('${x.id}',this.value)"><option value="Umb" ${watcherValue(x)==='Umb'?'selected':''}>Umb</option><option value="Lu" ${watcherValue(x)==='Lu'?'selected':''}>Lu</option><option value="both" ${watcherValue(x)==='both'?'selected':''}>Entrambi</option></select></div><div class="detail-status"><label for="detailStatus">Stato</label><select id="detailStatus" onchange="setItemStatus('${x.id}',this.value)"><option value="completed" ${x.status==='completed'?'selected':''}>Completato</option><option value="watching" ${x.status==='watching'?'selected':''}>In visione</option><option value="watchlist" ${x.status==='watchlist'?'selected':''}>Da guardare</option><option value="abandoned" ${x.status==='abandoned'?'selected':''}>Abbandonato</option></select></div><p>${x.watchYears?.length?'Visione: '+esc(x.watchYears.join(', ')):(x.lastWatched?'Visto il '+esc(x.lastWatched):'Data di visione non disponibile')}</p><div class="reaction-group" role="group" aria-label="La tua valutazione"><button type="button" class="reaction-btn ${x.rating==='dislike'?'active':''}" title="Non mi piace" aria-label="Non mi piace" onclick="setItemRating('${x.id}','dislike')">${reactionIcon('dislike')}</button><button type="button" class="reaction-btn ${x.rating==='like'?'active':''}" title="Mi piace" aria-label="Mi piace" onclick="setItemRating('${x.id}','like')">${reactionIcon('like')}</button><button type="button" class="reaction-btn ${x.rating==='love'?'active':''}" title="Adoro" aria-label="Adoro" onclick="setItemRating('${x.id}','love')">${reactionIcon('love')}</button><button type="button" class="clear-rating" onclick="setItemRating('${x.id}',null)">Azzera</button></div><p>${esc(x.platform||'Piattaforma non indicata')}</p>${x.tmdbStatus?`<p>${esc(x.tmdbStatus)}</p>`:''}</div></div>${x.overview?`<p style="margin-top:16px">${esc(x.overview)}</p>`:''}${seasonHtml}${x.notes?`<p style="margin-top:18px">${esc(x.notes)}</p>`:''}<div class="detail-row"><span class="chip">${x.originalTitle?'Titolo originale: '+esc(x.originalTitle):'Scheda personale'}</span></div>`;document.getElementById('detailModal').classList.remove('hidden')}function setSeasonStatus(id,seasonNumber,status){let x=items.find(i=>i.id===id);if(!x)return;let season=(x.seasons||[]).find(s=>Number(s.season_number)===Number(seasonNumber));if(!season)return;season.watchStatus=status;save();showDetail(id)}document.getElementById('detailEdit').onclick=()=>{document.getElementById('detailModal').classList.add('hidden');openForm(selectedDetail)};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).classList.add('hidden'));document.querySelectorAll('.modal-back').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.add('hidden')}));document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));b.classList.add('active');activeFilter=b.dataset.filter;render()});['search','platformFilter','watcherFilter','viewYearFilter','sort'].forEach(id=>document.getElementById(id).addEventListener(id==='search'?'input':'change',render));
 document.getElementById('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify({app:'CineTrack',version:1,exportedAt:new Date().toISOString(),items},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cinetrack-backup.json';a.click();URL.revokeObjectURL(a.href);toast('Backup esportato')};
+let restoreBackupData=null;
+function downloadCineTrackBackup(list,filename){
+ const blob=new Blob([JSON.stringify({app:'CineTrack',version:1,exportedAt:new Date().toISOString(),items:list},null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.getElementById('restoreBackupMenu').onclick=()=>{
+ document.getElementById('settingsMenu').classList.add('hidden');
+ document.getElementById('restoreBackupFile').value='';
+ document.getElementById('restoreBackupPreview').style.display='none';
+ document.getElementById('restoreBackupError').style.display='none';
+ document.getElementById('restoreBackupConfirm').disabled=true;
+ restoreBackupData=null;
+ document.getElementById('restoreBackupModal').classList.remove('hidden');
+};
+document.getElementById('restoreBackupFile').addEventListener('change',async e=>{
+ const file=e.target.files&&e.target.files[0],preview=document.getElementById('restoreBackupPreview'),error=document.getElementById('restoreBackupError'),confirmBtn=document.getElementById('restoreBackupConfirm');
+ restoreBackupData=null;confirmBtn.disabled=true;preview.style.display='none';error.style.display='none';
+ if(!file)return;
+ try{
+  if(file.size>15*1024*1024)throw new Error('Il file supera il limite di 15 MB.');
+  const data=JSON.parse(await file.text());
+  if(!data||data.app!=='CineTrack'||!Array.isArray(data.items)||!data.items.length)throw new Error('Il file non sembra un backup CineTrack valido.');
+  const ids=new Set();
+  for(const item of data.items){
+   if(!item||item.id===undefined||item.id===null||String(item.id).trim()===''||typeof item.title!=='string'||!item.title.trim())throw new Error('Il backup contiene una scheda senza ID o titolo valido.');
+   const id=String(item.id);if(ids.has(id))throw new Error('Il backup contiene ID duplicati. Nessun dato è stato modificato.');ids.add(id);
+  }
+  const currentIds=new Set(items.map(x=>String(x.id))),incomingIds=new Set(data.items.map(x=>String(x.id)));
+  const added=data.items.filter(x=>!currentIds.has(String(x.id))).length;
+  const removed=items.filter(x=>!incomingIds.has(String(x.id))).length;
+  const updated=data.items.filter(x=>currentIds.has(String(x.id))).length;
+  restoreBackupData=data;
+  preview.innerHTML='<b>Backup valido</b><br>Data: '+(data.exportedAt?new Date(data.exportedAt).toLocaleString('it-IT'):'non indicata')+'<br>Schede nel backup: <b>'+data.items.length+'</b><br>Nuove schede: '+added+'<br>Schede sostituite: '+updated+'<br>Schede che non saranno più presenti: '+removed+'<br><small style="color:var(--muted)">La libreria attuale verrà sostituita integralmente.</small>';
+  preview.style.display='block';confirmBtn.disabled=false;
+ }catch(err){error.textContent=err.message||'Impossibile leggere il backup.';error.style.display='block'}
+});
+document.getElementById('restoreBackupConfirm').onclick=async()=>{
+ if(!restoreBackupData)return;
+ const confirmBtn=document.getElementById('restoreBackupConfirm');
+ if(!confirm('Confermi il ripristino? La libreria attuale verrà sostituita su tutti i dispositivi collegati. Prima scaricherò un backup di sicurezza.'))return;
+ confirmBtn.disabled=true;confirmBtn.textContent='Ripristino…';
+ const previousItems=items.map(x=>({...x})),nextItems=restoreBackupData.items.map(x=>({...x}));
+ const previousIds=new Set(previousItems.map(x=>String(x.id))),nextIds=new Set(nextItems.map(x=>String(x.id)));
+ downloadCineTrackBackup(previousItems,'cinetrack-backup-prima-del-ripristino.json');
+ try{
+  if(ctSyncReady&&ctClient&&ctUser){
+   ctApplyingRemote=true;
+   const rows=nextItems.map(x=>({id:String(x.id),payload:x,updated_by:ctUser.id}));
+   const {error:upsertError}=await ctClient.from('cinetrack_items').upsert(rows,{onConflict:'id'});
+   if(upsertError)throw upsertError;
+   const removed=[...previousIds].filter(id=>!nextIds.has(id));
+   if(removed.length){
+    const {error:deleteError}=await ctClient.from('cinetrack_items').delete().in('id',removed);
+    if(deleteError)throw deleteError;
+   }
+   ctKnownIds=nextIds;
+  }
+  items=nextItems;
+  localStorage.setItem(KEY,JSON.stringify(items));render();
+  document.getElementById('restoreBackupModal').classList.add('hidden');
+  restoreBackupData=null;
+  toast(ctSyncReady?'Backup ripristinato e sincronizzato':'Backup ripristinato su questo dispositivo');
+ }catch(err){
+  console.error('Ripristino backup non riuscito',err);
+  let rollbackOk=true;
+  if(ctSyncReady&&ctClient&&ctUser){
+   try{
+    const oldRows=previousItems.map(x=>({id:String(x.id),payload:x,updated_by:ctUser.id}));
+    if(oldRows.length){const {error:rollbackUpsertError}=await ctClient.from('cinetrack_items').upsert(oldRows,{onConflict:'id'});if(rollbackUpsertError)throw rollbackUpsertError}
+    const addedIds=[...nextIds].filter(id=>!previousIds.has(id));
+    if(addedIds.length){const {error:rollbackDeleteError}=await ctClient.from('cinetrack_items').delete().in('id',addedIds);if(rollbackDeleteError)throw rollbackDeleteError}
+    ctKnownIds=previousIds;
+   }catch(rollbackError){
+    rollbackOk=false;console.error('Rollback backup non riuscito',rollbackError);
+    try{await ctApplyRemote()}catch(syncErr){console.error('Ricaricamento dopo errore non riuscito',syncErr)}
+   }
+  }else{items=previousItems;localStorage.setItem(KEY,JSON.stringify(items));render()}
+  document.getElementById('restoreBackupError').textContent=rollbackOk?'Ripristino non completato: ho mantenuto i dati precedenti. Controlla la connessione e riprova.':'Ripristino e ripristino di sicurezza non completati correttamente. Non chiudere la pagina: verifica la libreria e conserva il backup scaricato.';
+  document.getElementById('restoreBackupError').style.display='block';
+  toast('Ripristino non completato');
+ }finally{
+  ctApplyingRemote=false;
+  confirmBtn.disabled=false;confirmBtn.textContent='Ripristina libreria';
+ }
+};
+
 
 // Importazione Netflix v0.4: raggruppa episodi, verifica le serie su TMDB e separa i casi dubbi.
 let netflixRows=[],netflixPreview=null;
@@ -475,11 +570,17 @@ document.getElementById('ctMakeInvite').onclick=async()=>{
 };
 document.getElementById('ctCopyInvite').onclick=()=>navigator.clipboard.writeText(document.getElementById('ctInviteCode').textContent).then(()=>toast('Codice copiato'));
 document.getElementById('ctCloseInvite').onclick=()=>document.getElementById('ctInvitePanel').style.display='none';
-ctBoot();
+if(window.CINETRACK_PREVIEW_MODE){
+ document.getElementById('ctAuthGate').style.display='none';
+ document.getElementById('ctAuthLoading').style.display='none';
+ document.getElementById('ctAuthPanel').style.display='none';
+ const previewNotice=document.createElement('div');previewNotice.textContent='AMBIENTE DI PROVA · DATI LOCALI · NESSUNA SINCRONIZZAZIONE';previewNotice.style.cssText='position:sticky;top:0;z-index:100000;background:#8b5cf6;color:white;text-align:center;padding:8px 12px;font-size:11px;font-weight:800;letter-spacing:.06em';document.body.prepend(previewNotice);
+ render();
+}else{ctBoot();}
 
 </script>
 <script>
-if ('serviceWorker' in navigator) {
+if (!window.CINETRACK_PREVIEW_MODE && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker non registrato:', err));
   });
