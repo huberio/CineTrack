@@ -480,7 +480,7 @@ function primeParentTitle(raw){
   /\s+(?:stagione|season|serie|series)\s*(\d+)\s*$/i,
   /\s*[-–—]\s*S(\d+)\s*$/i
  ];
- for(let re of patterns){let m=base.match(re);if(m){season=Number(m[1]);base=base.slice(0,m.index).trim();break}}
+ for(let re of patterns){let m=base.match(re);if(m){let parsedSeason=Number(m[1]);season=parsedSeason<=50?parsedSeason:null;base=base.slice(0,m.index).trim();break}}
  if(season===null){
   let words={prima:1,seconda:2,terza:3,quarta:4,quinta:5,sesta:6,settima:7,ottava:8,nona:9,decima:10};
   let m=base.match(/\s*[-–—]?\s*(prima|seconda|terza|quarta|quinta|sesta|settima|ottava|nona|decima)\s+stagione\s*$/i);
@@ -566,7 +566,7 @@ document.getElementById('confirmPrimeImport').onclick=async()=>{
   let existing=primeExisting(g.title,'serie'),dates=g.dates||[];
   if(existing){primeMergeDates(existing,dates,owner);if(!existing.platform)existing.platform='Prime Video';if(g.seasons.length){let old=new Map((existing.seasons||[]).map(s=>[Number(s.season_number),s]));for(let s of g.seasons){let prior=old.get(s.season_number);if(prior){prior.watchStatus=prior.watchStatus==='completed'?'completed':'watching'}else old.set(s.season_number,{season_number:s.season_number,name:'Stagione '+s.season_number,watchStatus:'watching'})}existing.seasons=[...old.values()].sort((a,b)=>Number(a.season_number)-Number(b.season_number))}merged++;continue}
   let meta=null;if(g.tmdbId){try{meta=await tmdb('/tv/'+g.tmdbId)}catch(e){}}
-  let seasons=g.seasons.length?g.seasons.map(s=>({season_number:s.season_number,name:'Stagione '+s.season_number,episode_count:null,air_date:null,poster_path:null,watchStatus:'watching'})):(meta?.seasons||[]).filter(s=>Number(s.season_number)>0).map(s=>({season_number:s.season_number,name:s.name,episode_count:s.episode_count,air_date:s.air_date,poster_path:s.poster_path,watchStatus:'watchlist'}));
+  let seasons=g.seasons.map(s=>({season_number:s.season_number,name:'Stagione '+s.season_number,episode_count:null,air_date:null,poster_path:null,watchStatus:'watching'}));
   items.push({id:uid(),title:meta?.name||g.title,type:'serie',year:Number((meta?.first_air_date||'').slice(0,4))||null,status:'watching',rating:null,platform:'Prime Video',poster:meta?.poster_path?TMDB_IMG+meta.poster_path:'',tmdbId:meta?.id||g.tmdbId||null,originalTitle:meta?.original_name||'',overview:meta?.overview||'',tmdbStatus:meta?.status||'',seasons,watchDates:dates,watchYears:[...new Set(dates.map(d=>d.slice(0,4)))].sort(),firstWatched:dates[0]||null,lastWatched:dates[dates.length-1]||null,watchDate:dates[dates.length-1]||null,notes:'Importato dalla cronologia Prime Video: '+g.episodes+' episodi distinti riconosciuti. Lo stato resta “In visione”: la cronologia non dimostra che la serie sia stata completata.',watchedBy:[owner],created:Date.now()});added++;
  }
  save();primePreview=null;document.getElementById('primeImportModal').classList.add('hidden');document.getElementById('primeCsvFile').value='';document.getElementById('primeImportOwner').value='';document.getElementById('analyzePrime').disabled=true;document.getElementById('primeImportPreview').innerHTML='';document.getElementById('primeImportPreview').classList.add('hidden');document.getElementById('confirmPrimeImport').disabled=true;toast('Importati '+added+' contenuti; aggiornati '+merged+' già presenti.');
