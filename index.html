@@ -90,6 +90,7 @@ select{padding-right:30px;background-position:right 12px center}
         <div class="settings-menu-title">Impostazioni</div>
         <button class="settings-item" id="tmdbSettingsBtn" type="button">Collega TMDB</button>
         <button class="settings-item" id="importNetflixMenu" type="button">Importa Netflix</button>
+        <button class="settings-item" id="importPrimeMenu" type="button">Importa Prime Video</button>
         <button class="settings-item" id="recoverPostersMenu" type="button">Recupera locandine</button>
         <button class="settings-item" id="exportBtn" type="button" aria-label="Backup archivio">Backup archivio</button>
         <button class="settings-item" id="restoreBackupMenu" type="button">Ripristina backup JSON</button>
@@ -121,6 +122,9 @@ select{padding-right:30px;background-position:right 12px center}
 <div class="modal-back hidden" id="detailModal"><div class="modal"><div class="modal-head"><h3>Dettaglio contenuto</h3><button class="x" data-close="detailModal">×</button></div><div id="detailBody"></div><div class="modal-actions"><button class="btn" id="detailEdit">Modifica</button><div class="right-actions"><button class="btn primary" data-close="detailModal">Applica</button></div></div></div></div>
 <div class="modal-back hidden" id="tmdbModal"><div class="modal"><div class="modal-head"><h3>Collega The Movie Database</h3><button class="x" data-close="tmdbModal">×</button></div><p style="color:var(--muted);font-size:13px">Per cercare titoli in italiano e recuperare automaticamente locandine, informazioni e stagioni, CineTrack usa TMDB. Crea una API Key gratuita sul sito di TMDB e incollala qui. La chiave resta salvata solo in questo browser.</p><div class="field"><label for="tmdbKey">TMDB API Key (v3 auth)</label><input id="tmdbKey" type="password" placeholder="Incolla qui la tua API Key"></div><div class="notice">La chiave si richiede nelle impostazioni sviluppatore del tuo account TMDB. Non inserire la password del tuo account.</div><div class="modal-actions"><button class="btn" id="tmdbClear">Rimuovi chiave</button><div class="right-actions"><button class="btn" data-close="tmdbModal">Annulla</button><button class="btn primary" id="tmdbSave">Salva e verifica</button></div></div></div></div>
 <div class="modal-back hidden" id="importModal"><div class="modal"><div class="modal-head"><h3>Importa la cronologia Netflix</h3><button class="x" data-close="importModal">×</button></div><p style="color:var(--muted);font-size:13px">CineTrack raggruppa gli episodi sotto una sola serie. Non importa mai le singole puntate come schede separate. I titoli ambigui vengono lasciati da verificare.</p><div class="import-box"><b>Seleziona il file CSV di Netflix</b><br><input type="file" id="csvFile" accept=".csv,text/csv"><div style="margin:12px auto 0;max-width:280px;text-align:left"><label for="importOwner" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">A chi appartiene questa cronologia?</label><select id="importOwner" style="width:100%"><option value="">Seleziona Umb o Lu…</option><option value="Umb">Umb</option><option value="Lu">Lu</option></select></div><br><button class="btn" id="analyzeNetflix" style="margin-top:12px" disabled>Analizza cronologia</button></div><div id="importResult" class="notice"></div><div id="importPreview" class="hidden" style="margin-top:14px"></div><div class="modal-actions"><button class="btn" data-close="importModal">Chiudi</button><button class="btn primary" id="confirmImport" disabled>Importa contenuti riconosciuti</button></div></div></div>
+
+<div class="modal-back hidden" id="primeImportModal"><div class="modal"><div class="modal-head"><h3>Importa la cronologia Prime Video</h3><button class="x" data-close="primeImportModal">×</button></div><p style="color:var(--muted);font-size:13px">Importazione dedicata al CSV di Amazon Prime Video. Le righe di tipo Series vengono raggruppate per titolo e stagione; gli episodi non diventano schede separate. I casi senza un titolo di serie identificabile restano da verificare.</p><div class="import-box"><b>Seleziona il CSV esportato da Prime Video</b><br><input type="file" id="primeCsvFile" accept=".csv,text/csv"><div style="margin:12px auto 0;max-width:280px;text-align:left"><label for="primeImportOwner" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">A chi appartiene questa cronologia?</label><select id="primeImportOwner" style="width:100%"><option value="">Seleziona Umb o Lu…</option><option value="Umb">Umb</option><option value="Lu">Lu</option></select></div><br><button class="btn" id="analyzePrime" style="margin-top:12px" disabled>Analizza cronologia</button></div><div id="primeImportResult" class="notice"></div><div id="primeImportPreview" class="hidden" style="margin-top:14px"></div><div class="modal-actions"><button class="btn" data-close="primeImportModal">Chiudi</button><button class="btn primary" id="confirmPrimeImport" disabled>Importa contenuti riconosciuti</button></div></div></div>
+
 
 <div id="ctAuthGate" style="position:fixed;inset:0;z-index:99999;background:#101820;color:#f4f7f8;display:flex;align-items:center;justify-content:center;padding:22px;font-family:inherit">
   <div id="ctAuthLoading" style="width:100%;background:transparent;border:0;border-radius:0;padding:0;box-shadow:none;text-align:center">
@@ -462,6 +466,112 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLower
 // Add a visible import entry beside the library title.
 document.getElementById('importNetflixMenu').onclick=()=>{document.getElementById('importModal').classList.remove('hidden');closeSettingsMenu()};
 document.getElementById('recoverPostersMenu').onclick=()=>{repairMissingFilmPosters();closeSettingsMenu()};
+
+
+// --- Importazione dedicata Amazon Prime Video ---
+let primePreview=null;
+function primeDate(value){let s=String(value||'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[1]+'-'+m[2]+'-'+m[3]:null}
+function primeParentTitle(raw){
+ let title=String(raw||'').trim();
+ if(!title)return null;
+ if(/^stagione\s+\d+$/i.test(title))return null;
+ let season=null,base=title,patterns=[
+  /\s*[-–—]\s*(?:stagione|season|serie|series)\s*(\d+)\s*$/i,
+  /\s+(?:stagione|season|serie|series)\s*(\d+)\s*$/i,
+  /\s*[-–—]\s*S(\d+)\s*$/i
+ ];
+ for(let re of patterns){let m=base.match(re);if(m){let parsedSeason=Number(m[1]);season=parsedSeason<=50?parsedSeason:null;base=base.slice(0,m.index).trim();break}}
+ if(season===null){
+  let words={prima:1,seconda:2,terza:3,quarta:4,quinta:5,sesta:6,settima:7,ottava:8,nona:9,decima:10};
+  let m=base.match(/\s*[-–—]?\s*(prima|seconda|terza|quarta|quinta|sesta|settima|ottava|nona|decima)\s+stagione\s*$/i);
+  if(m){season=words[m[1].toLowerCase()];base=base.slice(0,m.index).trim()}
+ }
+ return base?{title:base,season}:null;
+}
+function primeExisting(title,type){return items.find(x=>x.type===type&&normTitle(x.title)===normTitle(title))}
+function primeMergeDates(item,dates,owner){
+ let merged=[...new Set([...(item.watchDates||[]),...dates.filter(Boolean)])].sort();
+ if(merged.length){item.watchDates=merged;item.watchYears=[...new Set([...(item.watchYears||[]),...merged.map(d=>d.slice(0,4))])].sort();item.firstWatched=merged[0];item.lastWatched=merged[merged.length-1];item.watchDate=merged[merged.length-1]}
+ mergeWatcher(item,owner);
+}
+document.getElementById('primeCsvFile').onchange=e=>{
+ primePreview=null;document.getElementById('primeImportPreview').classList.add('hidden');
+ let f=e.target.files[0];document.getElementById('primeImportResult').textContent=f?'File selezionato: '+f.name+'. Premi “Analizza cronologia” per controllare i risultati.':'';
+ document.getElementById('analyzePrime').disabled=!(f&&document.getElementById('primeImportOwner').value);
+ document.getElementById('confirmPrimeImport').disabled=true;
+};
+document.getElementById('primeImportOwner').onchange=()=>{
+ document.getElementById('analyzePrime').disabled=!(document.getElementById('primeCsvFile').files[0]&&document.getElementById('primeImportOwner').value);
+ primePreview=null;document.getElementById('confirmPrimeImport').disabled=true;
+};
+document.getElementById('analyzePrime').onclick=async()=>{
+ let file=document.getElementById('primeCsvFile').files[0],owner=document.getElementById('primeImportOwner').value,button=document.getElementById('analyzePrime');
+ if(!file||!owner){toast('Seleziona il CSV e indica Umb o Lu');return}
+ button.disabled=true;button.textContent='Analisi in corso…';document.getElementById('confirmPrimeImport').disabled=true;document.getElementById('primeImportPreview').classList.add('hidden');
+ try{
+  let rows=parseCSV(await file.text()),headers=(rows.shift()||[]).map(x=>x.replace(/^\uFEFF/,'').trim());
+  let col=name=>headers.findIndex(h=>h.toLowerCase()===name.toLowerCase());
+  let typeI=col('Type'),titleI=col('Title'),dateI=col('Date Watched'),episodeI=col('Episode Title'),gtiI=col('Global Title Identifier'),episodeGtiI=col('Episode Global Title Identifier');
+  if([typeI,titleI,dateI,gtiI].some(i=>i<0))throw new Error('Il CSV non contiene tutte le colonne Prime Video necessarie.');
+  let films=new Map(),series=new Map(),review=[],validRows=0;
+  for(let row of rows){
+   let type=(row[typeI]||'').trim().toLowerCase(),rawTitle=(row[titleI]||'').trim(),date=primeDate(row[dateI]),gti=(row[gtiI]||'').trim(),episodeId=episodeGtiI>=0?(row[episodeGtiI]||'').trim():'';
+   if(!rawTitle||!gti)continue;validRows++;
+   if(type==='movie'){
+    let key=gti,entry=films.get(key)||{title:rawTitle,dates:[],gti:key,plays:0};
+    entry.plays++;if(date)entry.dates.push(date);films.set(key,entry);continue;
+   }
+   if(type==='series'){
+    let parsed=primeParentTitle(rawTitle);
+    if(!parsed){review.push({title:rawTitle,reason:'Amazon non indica il titolo della serie: serve una verifica manuale',date});continue}
+    let key=normTitle(parsed.title),entry=series.get(key)||{title:parsed.title,dates:[],episodes:new Set(),seasonMap:new Map(),gtiList:new Set(),rawTitles:new Set()};
+    if(date)entry.dates.push(date);if(episodeId)entry.episodes.add(episodeId);
+    entry.gtiList.add(gti);entry.rawTitles.add(rawTitle);
+    if(parsed.season!==null){let season=entry.seasonMap.get(parsed.season)||{season_number:parsed.season,seenEpisodes:new Set()};if(episodeId)season.seenEpisodes.add(episodeId);entry.seasonMap.set(parsed.season,season)}
+    series.set(key,entry);continue;
+   }
+   review.push({title:rawTitle,reason:'Tipo di contenuto Amazon non riconosciuto: '+(type||'vuoto')});
+  }
+  let filmList=[...films.values()].map(x=>({...x,dates:[...new Set(x.dates)].sort()}));
+  let seriesList=[...series.values()].map(x=>({...x,dates:[...new Set(x.dates)].sort(),episodes:x.episodes.size,seasons:[...x.seasonMap.values()].map(s=>({season_number:s.season_number,seenEpisodes:s.seenEpisodes.size,watchStatus:'watching'})).sort((a,b)=>a.season_number-b.season_number),gtiList:[...x.gtiList],rawTitles:[...x.rawTitles]}));
+  let duplicatesFilm=filmList.filter(x=>primeExisting(x.title,'film')).length,duplicatesSeries=seriesList.filter(x=>primeExisting(x.title,'serie')).length;
+  // TMDB enrichment is optional and only accepts exact normalized title matches.
+  if(tmdbKey&&seriesList.length){
+   button.textContent='Verifica serie su TMDB…';
+   await mapLimit(seriesList,3,async g=>{
+    try{let d=await tmdb('/search/tv',{query:g.title,include_adult:'false'}),t=normTitle(g.title),match=(d.results||[]).find(r=>normTitle(r.name)===t||normTitle(r.original_name)===t);if(match){g.tmdbId=match.id;g.tmdbResult={name:match.name,original_name:match.original_name,first_air_date:match.first_air_date}}}catch(e){}
+   });
+  }
+  primePreview={films:filmList,series:seriesList,review,owner,rows:validRows,sourceName:file.name,duplicates:duplicatesFilm+duplicatesSeries};
+  let sample=(arr,format)=>arr.slice(0,10).map(x=>'<li>'+esc(x.title)+(format?format(x):'')+'</li>').join('')||'<li>Nessun elemento</li>';
+  let root=document.getElementById('primeImportPreview');
+  root.innerHTML='<div class="stats" style="grid-template-columns:repeat(3,1fr);margin:12px 0"><div class="stat"><span>Film riconosciuti</span><strong>'+filmList.length+'</strong></div><div class="stat"><span>Serie raggruppate</span><strong>'+seriesList.length+'</strong></div><div class="stat"><span>Da verificare</span><strong>'+review.length+'</strong></div></div>'+
+   '<div class="notice">Cronologia attribuita a: <b>'+esc(owner)+'</b> · Righe elaborate: <b>'+validRows+'</b> · Duplicati già presenti: <b>'+primePreview.duplicates+'</b>. Le puntate non vengono mai create come schede separate.</div>'+
+   '<details open style="margin-top:10px"><summary><b>Film ('+filmList.length+')</b></summary><ul>'+sample(filmList,x=>' <small>· '+x.dates.length+' date</small>')+'</ul></details>'+
+   '<details open style="margin-top:10px"><summary><b>Serie TV ('+seriesList.length+')</b></summary><ul>'+sample(seriesList,x=>' <small>· '+x.episodes+' episodi · '+(x.seasons.length?x.seasons.length+' stagioni':'stagione non indicata')+(x.tmdbId?' · TMDB verificato':'')+'</small>')+'</ul></details>'+
+   '<details style="margin-top:10px"><summary><b>Da verificare ('+review.length+')</b></summary><ul>'+sample(review,x=>' <small>· '+esc(x.reason)+'</small>')+'</ul><p class="notice">Questi elementi non verranno importati automaticamente.</p></details>';
+  root.classList.remove('hidden');document.getElementById('primeImportResult').textContent='Analisi completata. Controlla le categorie prima di importare.';
+  document.getElementById('confirmPrimeImport').disabled=!(filmList.length||seriesList.length);
+ }catch(err){document.getElementById('primeImportResult').textContent=err.message;primePreview=null}
+ finally{button.disabled=false;button.textContent='Analizza cronologia'}
+};
+document.getElementById('confirmPrimeImport').onclick=async()=>{
+ if(!primePreview)return;let added=0,merged=0,owner=primePreview.owner;
+ for(let f of primePreview.films){
+  let existing=primeExisting(f.title,'film');
+  if(existing){primeMergeDates(existing,f.dates,owner);if(!existing.platform)existing.platform='Prime Video';merged++;continue}
+  let dates=f.dates||[];items.push({id:uid(),title:f.title,type:'film',year:null,status:'completed',rating:null,platform:'Prime Video',poster:'',watchDates:dates,watchYears:[...new Set(dates.map(d=>d.slice(0,4)))].sort(),firstWatched:dates[0]||null,lastWatched:dates[dates.length-1]||null,watchDate:dates[dates.length-1]||null,notes:'Importato dalla cronologia Prime Video.',watchedBy:[owner],created:Date.now()});added++;
+ }
+ for(let g of primePreview.series){
+  let existing=primeExisting(g.title,'serie'),dates=g.dates||[];
+  if(existing){primeMergeDates(existing,dates,owner);if(!existing.platform)existing.platform='Prime Video';if(g.seasons.length){let old=new Map((existing.seasons||[]).map(s=>[Number(s.season_number),s]));for(let s of g.seasons){let prior=old.get(s.season_number);if(prior){prior.watchStatus=prior.watchStatus==='completed'?'completed':'watching'}else old.set(s.season_number,{season_number:s.season_number,name:'Stagione '+s.season_number,watchStatus:'watching'})}existing.seasons=[...old.values()].sort((a,b)=>Number(a.season_number)-Number(b.season_number))}merged++;continue}
+  let meta=null;if(g.tmdbId){try{meta=await tmdb('/tv/'+g.tmdbId)}catch(e){}}
+  let seasons=g.seasons.map(s=>({season_number:s.season_number,name:'Stagione '+s.season_number,episode_count:null,air_date:null,poster_path:null,watchStatus:'watching'}));
+  items.push({id:uid(),title:meta?.name||g.title,type:'serie',year:Number((meta?.first_air_date||'').slice(0,4))||null,status:'watching',rating:null,platform:'Prime Video',poster:meta?.poster_path?TMDB_IMG+meta.poster_path:'',tmdbId:meta?.id||g.tmdbId||null,originalTitle:meta?.original_name||'',overview:meta?.overview||'',tmdbStatus:meta?.status||'',seasons,watchDates:dates,watchYears:[...new Set(dates.map(d=>d.slice(0,4)))].sort(),firstWatched:dates[0]||null,lastWatched:dates[dates.length-1]||null,watchDate:dates[dates.length-1]||null,notes:'Importato dalla cronologia Prime Video: '+g.episodes+' episodi distinti riconosciuti. Lo stato resta “In visione”: la cronologia non dimostra che la serie sia stata completata.',watchedBy:[owner],created:Date.now()});added++;
+ }
+ save();primePreview=null;document.getElementById('primeImportModal').classList.add('hidden');document.getElementById('primeCsvFile').value='';document.getElementById('primeImportOwner').value='';document.getElementById('analyzePrime').disabled=true;document.getElementById('primeImportPreview').innerHTML='';document.getElementById('primeImportPreview').classList.add('hidden');document.getElementById('confirmPrimeImport').disabled=true;toast('Importati '+added+' contenuti; aggiornati '+merged+' già presenti.');
+};
+document.getElementById('importPrimeMenu').onclick=()=>{document.getElementById('primeImportModal').classList.remove('hidden');closeSettingsMenu()};
 
 // --- Integrazione TMDB: ricerca localizzata e metadati completi delle serie ---
 async function tmdb(path,params={}){if(!tmdbKey)throw new Error('Configura prima la chiave API TMDB.');let u=new URL('https://api.themoviedb.org/3'+path);u.searchParams.set('api_key',tmdbKey);u.searchParams.set('language','it-IT');Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));let r=await fetch(u);if(!r.ok)throw new Error(r.status===401?'Chiave TMDB non valida.':`Errore TMDB (${r.status}).`);return r.json()}
