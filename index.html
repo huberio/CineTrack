@@ -542,9 +542,9 @@ document.getElementById('analyzeRatings').onclick=async()=>{
   try{
     let rows=parseCSV(await file.text());
     let headers=(rows.shift()||[]).map(x=>x.replace(/^\\uFEFF/,'').trim().toLowerCase());
-    let titleIdx=headers.findIndex(h=>['title','titolo'].includes(h));
-    let ratingIdx=headers.findIndex(h=>['rating','your rating','valutazione'].includes(h));
-    if(titleIdx<0||ratingIdx<0)throw new Error('Il CSV deve contenere le colonne Title e Rating. Seleziona il file Ratings.csv originale di Netflix.');
+    let titleIdx=headers.findIndex(h=>['title','titolo','title name'].includes(h));
+    let ratingIdx=headers.findIndex(h=>['rating','your rating','valutazione','thumbs value','star value'].includes(h));
+    if(titleIdx<0||ratingIdx<0)throw new Error('Non riconosco le colonne del CSV. Servono Title/Rating oppure Title Name/Thumbs Value (formato Netflix).');
     pendingRatings=rows.map(r=>({title:(r[titleIdx]||'').trim(),rating:normalizeNetflixRating(r[ratingIdx])})).filter(r=>r.title&&r.rating);
     let matched=0,unmatched=[];
     for(let r of pendingRatings){if(items.some(i=>normTitle(i.title)===normTitle(r.title)))matched++;else unmatched.push(r.title);}
