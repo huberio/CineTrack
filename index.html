@@ -242,7 +242,7 @@ async function ctApplyRemote(){
 }
 function ctSubscribe(){
  ctClient.channel('cinetrack-live-items').on('postgres_changes',{event:'*',schema:'public',table:'cinetrack_items'},async payload=>{
-  if(!ctSyncReady)return;
+  if(!ctSyncReady||ctApplyingRemote)return;
   const id=String((payload.new&&payload.new.id)||(payload.old&&payload.old.id)||'');
   ctApplyingRemote=true;
   if(payload.eventType==='DELETE'){items=items.filter(x=>String(x.id)!==id);ctKnownIds.delete(id)}
@@ -406,10 +406,20 @@ document.getElementById('restoreBackupConfirm').onclick=async()=>{
   toast(ctSyncReady?'Backup ripristinato e sincronizzato':'Backup ripristinato su questo dispositivo');
  }catch(err){
   console.error('Ripristino backup non riuscito',err);
-  if(ctSyncReady&&ctClient){
-   try{await ctApplyRemote()}catch(syncErr){console.error('Ricaricamento dopo errore non riuscito',syncErr)}
+  let rollbackOk=true;
+  if(ctSyncReady&&ctClient&&ctUser){
+   try{
+    const oldRows=previousItems.map(x=>({id:String(x.id),payload:x,updated_by:ctUser.id}));
+    if(oldRows.length){const {error:rollbackUpsertError}=await ctClient.from('cinetrack_items').upsert(oldRows,{onConflict:'id'});if(rollbackUpsertError)throw rollbackUpsertError}
+    const addedIds=[...nextIds].filter(id=>!previousIds.has(id));
+    if(addedIds.length){const {error:rollbackDeleteError}=await ctClient.from('cinetrack_items').delete().in('id',addedIds);if(rollbackDeleteError)throw rollbackDeleteError}
+    ctKnownIds=previousIds;
+   }catch(rollbackError){
+    rollbackOk=false;console.error('Rollback backup non riuscito',rollbackError);
+    try{await ctApplyRemote()}catch(syncErr){console.error('Ricaricamento dopo errore non riuscito',syncErr)}
+   }
   }else{items=previousItems;localStorage.setItem(KEY,JSON.stringify(items));render()}
-  document.getElementById('restoreBackupError').textContent='Ripristino non completato. Ho tentato di mantenere/ripristinare i dati precedenti. Controlla la connessione e verifica la libreria prima di riprovare.';
+  document.getElementById('restoreBackupError').textContent=rollbackOk?'Ripristino non completato: ho mantenuto i dati precedenti. Controlla la connessione e riprova.':'Ripristino e ripristino di sicurezza non completati correttamente. Non chiudere la pagina: verifica la libreria e conserva il backup scaricato.';
   document.getElementById('restoreBackupError').style.display='block';
   toast('Ripristino non completato');
  }finally{
