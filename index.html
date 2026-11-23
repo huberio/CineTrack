@@ -132,7 +132,7 @@ select{padding-right:30px;background-position:right 12px center}
 <div class="field full"><label for="poster">URL locandina (facoltativo)</label><input id="poster" type="url" placeholder="https://…"></div><div class="field full"><label for="notes">Note personali (facoltative)</label><textarea id="notes" rows="3" placeholder="Ad esempio: da rivedere, visto con…"></textarea></div></div><div class="modal-actions"><button type="button" class="btn hidden" id="deleteBtn">Elimina</button><div class="right-actions"><button type="button" class="btn" data-close="editModal">Annulla</button><button class="btn primary" type="submit">Salva contenuto</button></div></div></form></div></div>
 <div class="modal-back hidden" id="detailModal"><div class="modal"><div class="modal-head"><h3>Dettaglio contenuto</h3><button class="x" data-close="detailModal">×</button></div><div id="detailBody"></div><div class="modal-actions"><button class="btn" id="detailEdit">Modifica</button><div class="right-actions"><button class="btn primary" data-close="detailModal">Applica</button></div></div></div></div>
 <div class="modal-back hidden" id="tmdbModal"><div class="modal"><div class="modal-head"><h3>Collega The Movie Database</h3><button class="x" data-close="tmdbModal">×</button></div><p style="color:var(--muted);font-size:13px">Per cercare titoli in italiano e recuperare automaticamente locandine, informazioni e stagioni, CineTrack usa TMDB. Crea una API Key gratuita sul sito di TMDB e incollala qui. La chiave resta salvata solo in questo browser.</p><div class="field"><label for="tmdbKey">TMDB API Key (v3 auth)</label><input id="tmdbKey" type="password" placeholder="Incolla qui la tua API Key"></div><div class="notice">La chiave si richiede nelle impostazioni sviluppatore del tuo account TMDB. Non inserire la password del tuo account.</div><div class="modal-actions"><button class="btn" id="tmdbClear">Rimuovi chiave</button><div class="right-actions"><button class="btn" data-close="tmdbModal">Annulla</button><button class="btn primary" id="tmdbSave">Salva e verifica</button></div></div></div></div>
-<div class="modal-back hidden" id="importModal"><div class="modal"><div class="modal-head"><h3>Importa la cronologia Netflix</h3><button class="x" data-close="importModal">×</button></div><p style="color:var(--muted);font-size:13px">CineTrack raggruppa gli episodi sotto una sola serie. Non importa mai le singole puntate come schede separate. I titoli ambigui vengono lasciati da verificare.</p><div class="import-box"><b>Seleziona il file CSV di Netflix</b><br><input type="file" id="csvFile" accept=".csv,text/csv"><div style="margin:12px auto 0;max-width:280px;text-align:left"><label for="importOwner" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">A chi appartiene questa cronologia?</label><select id="importOwner" style="width:100%"><option value="">Seleziona Umb o Lu…</option><option value="Umb">Umb</option><option value="Lu">Lu</option></select></div><br><button class="btn" id="analyzeNetflix" style="margin-top:12px" disabled>Analizza cronologia</button></div><div id="importResult" class="notice"></div><div id="importPreview" class="hidden" style="margin-top:14px"></div><div class="modal-actions"><button class="btn" data-close="importModal">Chiudi</button><button class="btn primary" id="confirmImport" disabled>Importa contenuti riconosciuti</button></div></div></div>
+<div class="modal-back hidden" id="importModal"><div class="modal"><div class="modal-head"><h3>Importa la cronologia Netflix</h3><button class="x" data-close="importModal">×</button></div><p style="color:var(--muted);font-size:13px">CineTrack raggruppa gli episodi sotto una sola serie. Non importa mai le singole puntate come schede separate. I titoli ambigui vengono lasciati da verificare.</p><div class="import-box"><b>Seleziona il file CSV di Netflix</b><br><input type="file" id="csvFile" accept=".csv,text/csv"><div style="margin:12px auto 0;max-width:280px;text-align:left"><label for="importOwner" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">A chi appartiene questa cronologia?</label><select id="importOwner" style="width:100%"><option value="">Seleziona Umb o Lu…</option><option value="Umb">Umb</option><option value="Lu">Lu</option></select></div><br><button class="btn" id="analyzeNetflix" style="margin-top:12px" disabled>Analizza cronologia</button></div><div class="import-box" style="margin-top:14px"><b>Importa le valutazioni Netflix</b><br><small style="color:var(--muted)">Carica il file Ratings.csv scaricato da Netflix. Le valutazioni saranno abbinate ai titoli già presenti nella libreria.</small><br><input type="file" id="ratingsCsvFile" accept=".csv,text/csv"><br><button class="btn" id="analyzeRatings" style="margin-top:10px" disabled>Analizza valutazioni</button><div id="ratingsImportResult" class="notice"></div><div id="ratingsImportPreview" class="hidden" style="text-align:left;margin-top:10px"></div><button class="btn primary" id="confirmRatingsImport" style="margin-top:10px" disabled>Applica valutazioni</button></div><div id="importResult" class="notice"></div><div id="importPreview" class="hidden" style="margin-top:14px"></div><div class="modal-actions"><button class="btn" data-close="importModal">Chiudi</button><button class="btn primary" id="confirmImport" disabled>Importa contenuti riconosciuti</button></div></div></div>
 
 <div class="modal-back hidden" id="primeImportModal"><div class="modal"><div class="modal-head"><h3>Importa la cronologia Prime Video</h3><button class="x" data-close="primeImportModal">×</button></div><p style="color:var(--muted);font-size:13px">Importazione dedicata al CSV di Amazon Prime Video. Le righe di tipo Series vengono raggruppate per titolo e stagione; gli episodi non diventano schede separate. I casi senza un titolo di serie identificabile restano da verificare.</p><div class="import-box"><b>Seleziona il CSV esportato da Prime Video</b><br><input type="file" id="primeCsvFile" accept=".csv,text/csv"><div style="margin:12px auto 0;max-width:280px;text-align:left"><label for="primeImportOwner" style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">A chi appartiene questa cronologia?</label><select id="primeImportOwner" style="width:100%"><option value="">Seleziona Umb o Lu…</option><option value="Umb">Umb</option><option value="Lu">Lu</option></select></div><br><button class="btn" id="analyzePrime" style="margin-top:12px" disabled>Analizza cronologia</button></div><div id="primeImportResult" class="notice"></div><div id="primeImportPreview" class="hidden" style="margin-top:14px"></div><div class="modal-actions"><button class="btn" data-close="primeImportModal">Chiudi</button><button class="btn primary" id="confirmPrimeImport" disabled>Importa contenuti riconosciuti</button></div></div></div>
 
@@ -515,6 +515,56 @@ document.getElementById('clearLibraryConfirm').onclick=async()=>{
   items=[];localStorage.setItem(KEY,'[]');render();document.getElementById('clearLibraryModal').classList.add('hidden');document.getElementById('clearLibraryPhrase').value='';toast('Libreria svuotata. Backup di sicurezza scaricato.');
  }catch(err){console.error('Svuotamento libreria non riuscito',err);error.textContent='Non sono riuscito a completare la cancellazione. La libreria locale è stata mantenuta. Dettaglio: '+(err.message||'errore sconosciuto');error.style.display='block'}
  finally{ctApplyingRemote=false;btn.disabled=document.getElementById('clearLibraryPhrase').value.trim()!=='SVUOTA';btn.textContent='Svuota libreria'}
+};
+
+// Importazione delle valutazioni Netflix: applica solo reazioni a titoli già presenti.
+let pendingRatings=[];
+const ratingLabelMap={
+  'dislike':'dislike','disliked':'dislike','thumbs down':'dislike','thumbs_down':'dislike','non mi piace':'dislike','1':'dislike',
+  'like':'like','liked':'like','thumbs up':'like','thumbs_up':'like','mi piace':'like','2':'like',
+  'love':'love','loved':'love','adore':'love','adoro':'love','3':'love'
+};
+function normalizeNetflixRating(value){
+  let k=String(value||'').trim().toLocaleLowerCase('it').replace(/[_-]+/g,' ');
+  return ratingLabelMap[k]||null;
+}
+document.getElementById('ratingsCsvFile').onchange=()=>{
+  document.getElementById('analyzeRatings').disabled=!document.getElementById('ratingsCsvFile').files[0];
+  document.getElementById('confirmRatingsImport').disabled=true;
+  document.getElementById('ratingsImportPreview').classList.add('hidden');
+  document.getElementById('ratingsImportResult').textContent='';
+  pendingRatings=[];
+};
+document.getElementById('analyzeRatings').onclick=async()=>{
+  let file=document.getElementById('ratingsCsvFile').files[0];
+  if(!file)return;
+  let btn=document.getElementById('analyzeRatings');btn.disabled=true;btn.textContent='Analisi…';
+  try{
+    let rows=parseCSV(await file.text());
+    let headers=(rows.shift()||[]).map(x=>x.replace(/^\\uFEFF/,'').trim().toLowerCase());
+    let titleIdx=headers.findIndex(h=>['title','titolo'].includes(h));
+    let ratingIdx=headers.findIndex(h=>['rating','your rating','valutazione'].includes(h));
+    if(titleIdx<0||ratingIdx<0)throw new Error('Il CSV deve contenere le colonne Title e Rating. Seleziona il file Ratings.csv originale di Netflix.');
+    pendingRatings=rows.map(r=>({title:(r[titleIdx]||'').trim(),rating:normalizeNetflixRating(r[ratingIdx])})).filter(r=>r.title&&r.rating);
+    let matched=0,unmatched=[];
+    for(let r of pendingRatings){if(items.some(i=>normTitle(i.title)===normTitle(r.title)))matched++;else unmatched.push(r.title);}
+    let root=document.getElementById('ratingsImportPreview');
+    root.innerHTML=`<p><b>${pendingRatings.length}</b> valutazioni riconosciute · <b>${matched}</b> titoli già presenti · <b>${unmatched.length}</b> non abbinati.</p>${unmatched.length?`<details><summary>Non abbinati</summary><ul>${unmatched.slice(0,30).map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details>`:''}<p class="notice">Le valutazioni vengono applicate solo ai titoli già presenti nella libreria. Nessuna scheda viene creata o eliminata.</p>`;
+    root.classList.remove('hidden');
+    document.getElementById('ratingsImportResult').textContent='Controlla il riepilogo prima di applicare le valutazioni.';
+    document.getElementById('confirmRatingsImport').disabled=!matched;
+  }catch(e){document.getElementById('ratingsImportResult').textContent=e.message;pendingRatings=[];}
+  finally{btn.disabled=false;btn.textContent='Analizza valutazioni';}
+};
+document.getElementById('confirmRatingsImport').onclick=()=>{
+  let applied=0;
+  for(let r of pendingRatings){let x=items.find(i=>normTitle(i.title)===normTitle(r.title));if(x){x.rating=r.rating;applied++;}}
+  save();pendingRatings=[];
+  document.getElementById('ratingsCsvFile').value='';
+  document.getElementById('ratingsImportPreview').classList.add('hidden');
+  document.getElementById('confirmRatingsImport').disabled=true;
+  document.getElementById('ratingsImportResult').textContent=`Valutazioni applicate: ${applied}.`;
+  toast(`Importate ${applied} valutazioni Netflix`);
 };
 
 // Importazione Netflix v0.4: raggruppa episodi, verifica le serie su TMDB e separa i casi dubbi.
